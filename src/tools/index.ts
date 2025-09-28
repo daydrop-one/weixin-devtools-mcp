@@ -1,0 +1,59 @@
+/**
+ * 工具模块导出
+ * 统一导出所有工具定义
+ */
+
+import { ToolDefinition } from './ToolDefinition.js';
+
+// 导入各个模块的工具
+import { connectDevtoolsTool, getCurrentPageTool } from './connection.js';
+import { getPageSnapshotTool } from './snapshot.js';
+import { clickTool } from './input.js';
+import { screenshotTool } from './screenshot.js';
+import {
+  startConsoleMonitoringTool,
+  stopConsoleMonitoringTool,
+  getConsoleTool,
+  clearConsoleTool
+} from './console.js';
+
+/**
+ * 所有可用工具的列表
+ */
+export const allTools: ToolDefinition[] = [
+  // 连接管理工具
+  connectDevtoolsTool,
+  getCurrentPageTool,
+
+  // 页面快照工具
+  getPageSnapshotTool,
+
+  // 交互操作工具
+  clickTool,
+
+  // 截图工具
+  screenshotTool,
+
+  // Console监听工具
+  startConsoleMonitoringTool,
+  stopConsoleMonitoringTool,
+  getConsoleTool,
+  clearConsoleTool,
+];
+
+/**
+ * 按名称获取工具
+ */
+export function getToolByName(name: string): ToolDefinition | undefined {
+  return allTools.find(tool => tool.name === name);
+}
+
+/**
+ * 获取所有工具名称
+ */
+export function getAllToolNames(): string[] {
+  return allTools.map(tool => tool.name);
+}
+
+// 重新导出工具定义相关类型和函数
+export * from './ToolDefinition.js';
