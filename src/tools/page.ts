@@ -1,0 +1,158 @@
+/**
+ * 页面查询和等待工具
+ * 提供类似浏览器的$选择器和waitFor等待功能
+ */
+
+import { z } from 'zod';
+import { defineTool, ToolCategories } from './ToolDefinition.js';
+import {
+  queryElements,
+  waitForCondition,
+  type QueryOptions,
+  type WaitForOptions
+} from '../tools.js';
+
+/**
+ * $ 选择器工具 - 通过CSS选择器查找页面元素
+ */
+export const querySelectorTool = defineTool({
+  name: '$',
+  description: '通过CSS选择器查找页面元素，返回匹配元素的详细信息',
+  schema: z.object({
+    selector: z.string().describe('CSS选择器，如：view.container、#myId、.myClass、text=按钮'),
+  }),
+  annotations: {
+    audience: ['developers'],
+  },
+  handler: async (request, response, context) => {
+    const { selector } = request.params;
+
+    if (!context.currentPage) {
+      throw new Error('请先获取当前页面');
+    }
+
+    try {
+      const options: QueryOptions = { selector };
+      const results = await queryElements(context.currentPage, context.elementMap, options);
+
+      if (results.length === 0) {
+        response.appendResponseLine(`未找到匹配选择器 "${selector}" 的元素`);
+        return;
+      }
+
+      response.appendResponseLine(`找到 ${results.length} 个匹配元素:`);
+      response.appendResponseLine('');
+
+      for (let i = 0; i < results.length; i++) {
+        const element = results[i];
+        response.appendResponseLine(`[${i + 1}] ${element.tagName} (uid: ${element.uid})`);
+
+        if (element.text) {
+          response.appendResponseLine(`    文本: ${element.text}`);
+        }
+
+        if (element.attributes) {
+          const attrs = Object.entries(element.attributes)
+            .map(([key, value]) => `${key}="${value}"`)
+            .join(' ');
+          response.appendResponseLine(`    属性: ${attrs}`);
+        }
+
+        if (element.position) {
+          const { left, top, width, height } = element.position;
+          response.appendResponseLine(`    位置: (${left}, ${top}) 大小: ${width}x${height}`);
+        }
+
+        response.appendResponseLine('');
+      }
+
+      // 查询可能会发现新元素，包含快照信息
+      response.setIncludeSnapshot(true);
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      response.appendResponseLine(`查询元素失败: ${errorMessage}`);
+      throw error;
+    }
+  },
+});
+
+/**
+ * waitFor 等待工具 - 等待条件满足
+ */
+export const waitForTool = defineTool({
+  name: 'waitFor',
+  description: '等待条件满足，支持等待元素出现、消失、文本匹配等',
+  schema: z.union([
+    // 简单的数字等待
+    z.number().describe('等待指定毫秒数'),
+    // 简单的选择器等待
+    z.string().describe('等待元素选择器出现'),
+    // 复杂的等待条件对象
+    z.object({
+      selector: z.string().optional().describe('等待元素选择器'),
+      timeout: z.number().optional().default(5000).describe('超时时间(毫秒)，默认5000ms'),
+      text: z.string().optional().describe('等待元素包含指定文本'),
+      visible: z.boolean().optional().describe('等待元素可见状态，true为可见，false为隐藏'),
+      disappear: z.boolean().optional().default(false).describe('等待元素消失，默认false'),
+    }),
+  ]),
+  annotations: {
+    audience: ['developers'],
+  },
+  handler: async (request, response, context) => {
+    const options = request.params;
+
+    if (!context.currentPage) {
+      throw new Error('请先获取当前页面');
+    }
+
+    try {
+      const startTime = Date.now();
+
+      // 构建等待描述信息
+      let waitDescription = '';
+      if (typeof options === 'number') {
+        waitDescription = `等待 ${options}ms`;
+      } else if (typeof options === 'string') {
+        waitDescription = `等待元素 "${options}" 出现`;
+      } else {
+        const parts = [];
+        if (options.selector) {
+          parts.push(`选择器 "${options.selector}"`);
+          if (options.disappear) parts.push('消失');
+          else parts.push('出现');
+        }
+        if (options.text) parts.push(`包含文本 "${options.text}"`);
+        if (options.visible !== undefined) {
+          parts.push(options.visible ? '可见' : '隐藏');
+        }
+        waitDescription = `等待 ${parts.join(' 且 ')}`;
+        if (options.timeout) {
+          waitDescription += ` (超时: ${options.timeout}ms)`;
+        }
+      }
+
+      response.appendResponseLine(`开始 ${waitDescription}...`);
+
+      const result = await waitForCondition(context.currentPage, options);
+
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      if (result) {
+        response.appendResponseLine(`等待成功，耗时 ${duration}ms`);
+
+        // 等待完成后，页面可能发生变化
+        response.setIncludeSnapshot(true);
+      } else {
+        response.appendResponseLine(`等待失败，耗时 ${duration}ms`);
+      }
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      response.appendResponseLine(`等待失败: ${errorMessage}`);
+      throw error;
+    }
+  },
+});

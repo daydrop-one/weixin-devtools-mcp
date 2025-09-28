@@ -10,6 +10,7 @@ import { connectDevtoolsTool, getCurrentPageTool } from './connection.js';
 import { getPageSnapshotTool } from './snapshot.js';
 import { clickTool } from './input.js';
 import { screenshotTool } from './screenshot.js';
+import { querySelectorTool, waitForTool } from './page.js';
 import {
   startConsoleMonitoringTool,
   stopConsoleMonitoringTool,
@@ -27,6 +28,10 @@ export const allTools: ToolDefinition[] = [
 
   // 页面快照工具
   getPageSnapshotTool,
+
+  // 页面查询和等待工具
+  querySelectorTool,
+  waitForTool,
 
   // 交互操作工具
   clickTool,
