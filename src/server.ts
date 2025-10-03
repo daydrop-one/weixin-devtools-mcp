@@ -36,6 +36,12 @@ const globalContext: ToolContext = {
     isMonitoring: false,
     startTime: null,
   },
+  networkStorage: {
+    requests: [],
+    isMonitoring: false,
+    startTime: null,
+    originalMethods: {},
+  },
 };
 
 /**

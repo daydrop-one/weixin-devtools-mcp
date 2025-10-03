@@ -41,6 +41,13 @@ import {
   clearConsoleTool
 } from './console.js';
 import {
+  startNetworkMonitoringTool,
+  stopNetworkMonitoringTool,
+  getNetworkRequestsTool,
+  clearNetworkRequestsTool,
+  diagnoseInterceptorTool
+} from './network.js';
+import {
   diagnoseConnectionTool,
   checkEnvironmentTool,
   debugPageElementsTool
@@ -92,6 +99,13 @@ export const allTools: ToolDefinition[] = [
   stopConsoleMonitoringTool,
   getConsoleTool,
   clearConsoleTool,
+
+  // 网络监控工具
+  startNetworkMonitoringTool,
+  stopNetworkMonitoringTool,
+  getNetworkRequestsTool,
+  clearNetworkRequestsTool,
+  diagnoseInterceptorTool,
 
   // 诊断工具
   diagnoseConnectionTool,

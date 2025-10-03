@@ -54,6 +54,43 @@ export interface ConsoleStorage {
 }
 
 /**
+ * 网络请求类型
+ */
+export type NetworkRequestType = 'request' | 'uploadFile' | 'downloadFile';
+
+/**
+ * 网络请求信息
+ */
+export interface NetworkRequest {
+  id: string;
+  type: NetworkRequestType;
+  url: string;
+  method?: string;
+  headers?: Record<string, string>;
+  data?: any;
+  statusCode?: number;
+  response?: any;
+  error?: string;
+  duration?: number;
+  timestamp: string;
+  success: boolean;
+}
+
+/**
+ * 网络请求数据存储
+ */
+export interface NetworkStorage {
+  requests: NetworkRequest[];
+  isMonitoring: boolean;
+  startTime: string | null;
+  originalMethods: {
+    request?: any;
+    uploadFile?: any;
+    downloadFile?: any;
+  };
+}
+
+/**
  * 工具处理器上下文
  */
 export interface ToolContext {
@@ -61,6 +98,7 @@ export interface ToolContext {
   currentPage: any;
   elementMap: Map<string, string>;
   consoleStorage: ConsoleStorage;
+  networkStorage: NetworkStorage;
 }
 
 /**

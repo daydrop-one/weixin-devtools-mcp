@@ -120,6 +120,254 @@ export async function connectDevtools(options: ConnectOptions): Promise<ConnectR
     }
     const pagePath = await currentPage.path;
 
+    // 自动启动网络监听
+    try {
+      // 创建请求拦截器（直接内联函数）
+      await miniProgram.mockWxMethod('request', function(this: any, options: any) {
+        // @ts-ignore - wx is available in WeChat miniprogram environment
+        const wxObj = (typeof wx !== 'undefined' ? wx : null) as any;
+        if (!wxObj) return this.origin(options);
+        if (!wxObj.__networkLogs) wxObj.__networkLogs = [];
+
+        const requestId = 'req_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+        const startTime = Date.now();
+
+        const originalSuccess = options.success;
+        options.success = function(res: any) {
+          wxObj.__networkLogs.push({
+            id: requestId,
+            type: 'request',
+            url: options.url,
+            method: options.method || 'GET',
+            headers: options.header,
+            data: options.data,
+            statusCode: res.statusCode,
+            response: res.data,
+            duration: Date.now() - startTime,
+            timestamp: new Date().toISOString(),
+            success: true
+          });
+          if (originalSuccess) originalSuccess(res);
+        };
+
+        const originalFail = options.fail;
+        options.fail = function(err: any) {
+          wxObj.__networkLogs.push({
+            id: requestId,
+            type: 'request',
+            url: options.url,
+            method: options.method || 'GET',
+            headers: options.header,
+            data: options.data,
+            error: err.errMsg || String(err),
+            duration: Date.now() - startTime,
+            timestamp: new Date().toISOString(),
+            success: false
+          });
+          if (originalFail) originalFail(err);
+        };
+
+        return this.origin(options);
+      });
+
+      // 拦截 uploadFile
+      await miniProgram.mockWxMethod('uploadFile', function(this: any, options: any) {
+        // @ts-ignore
+        const wxObj = (typeof wx !== 'undefined' ? wx : null) as any;
+        if (!wxObj) return this.origin(options);
+        if (!wxObj.__networkLogs) wxObj.__networkLogs = [];
+
+        const requestId = 'req_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+        const startTime = Date.now();
+
+        const originalSuccess = options.success;
+        options.success = function(res: any) {
+          wxObj.__networkLogs.push({
+            id: requestId,
+            type: 'uploadFile',
+            url: options.url,
+            statusCode: res.statusCode,
+            duration: Date.now() - startTime,
+            timestamp: new Date().toISOString(),
+            success: true
+          });
+          if (originalSuccess) originalSuccess(res);
+        };
+
+        const originalFail = options.fail;
+        options.fail = function(err: any) {
+          wxObj.__networkLogs.push({
+            id: requestId,
+            type: 'uploadFile',
+            url: options.url,
+            error: err.errMsg || String(err),
+            duration: Date.now() - startTime,
+            timestamp: new Date().toISOString(),
+            success: false
+          });
+          if (originalFail) originalFail(err);
+        };
+
+        return this.origin(options);
+      });
+
+      // 拦截 downloadFile
+      await miniProgram.mockWxMethod('downloadFile', function(this: any, options: any) {
+        // @ts-ignore
+        const wxObj = (typeof wx !== 'undefined' ? wx : null) as any;
+        if (!wxObj) return this.origin(options);
+        if (!wxObj.__networkLogs) wxObj.__networkLogs = [];
+
+        const requestId = 'req_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+        const startTime = Date.now();
+
+        const originalSuccess = options.success;
+        options.success = function(res: any) {
+          wxObj.__networkLogs.push({
+            id: requestId,
+            type: 'downloadFile',
+            url: options.url,
+            statusCode: res.statusCode,
+            duration: Date.now() - startTime,
+            timestamp: new Date().toISOString(),
+            success: true
+          });
+          if (originalSuccess) originalSuccess(res);
+        };
+
+        const originalFail = options.fail;
+        options.fail = function(err: any) {
+          wxObj.__networkLogs.push({
+            id: requestId,
+            type: 'downloadFile',
+            url: options.url,
+            error: err.errMsg || String(err),
+            duration: Date.now() - startTime,
+            timestamp: new Date().toISOString(),
+            success: false
+          });
+          if (originalFail) originalFail(err);
+        };
+
+        return this.origin(options);
+      });
+
+      // 拦截 Mpx 框架的 $xfetch（与 wx.request 同步注入，提高首批请求捕获率）
+      await miniProgram.evaluate(function() {
+        // @ts-ignore - wx is available in WeChat miniprogram environment
+        if (typeof wx === 'undefined') return;
+
+        // @ts-ignore
+        wx.__networkLogs = wx.__networkLogs || [];
+
+        // 检测 Mpx 框架
+        // @ts-ignore - getApp is available in WeChat miniprogram environment
+        const app = typeof getApp !== 'undefined' ? getApp() : null;
+        const hasMpxFetch = app &&
+                            app.$xfetch &&
+                            app.$xfetch.interceptors &&
+                            typeof app.$xfetch.interceptors.request.use === 'function';
+
+        // 调试日志
+        // @ts-ignore - 在运行时环境中输出调试信息
+        const debugInfo = {
+          // @ts-ignore
+          hasGetApp: typeof getApp !== 'undefined',
+          hasApp: !!app,
+          has$xfetch: !!(app && app.$xfetch),
+          hasInterceptors: !!(app && app.$xfetch && app.$xfetch.interceptors),
+          hasMpxFetch: hasMpxFetch
+        };
+        console.log('[MCP-DEBUG] Mpx检测:', debugInfo);
+
+        // 强制安装 Mpx 拦截器（不检查标志，每次都重新安装以覆盖旧的）
+        // 这样可以解决小程序未重新加载导致标志残留的问题
+        // @ts-ignore
+        if (hasMpxFetch) {
+          console.log('[MCP] 正在安装 Mpx $xfetch 拦截器（强制覆盖）...');
+
+          // 安装 Mpx 请求拦截器
+          // @ts-ignore
+          app.$xfetch.interceptors.request.use(function(config: any) {
+            const requestId = 'mpx_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+            const startTime = Date.now();
+
+            config.__mcp_requestId = requestId;
+            config.__mcp_startTime = startTime;
+
+            // @ts-ignore
+            wx.__networkLogs.push({
+              id: requestId,
+              type: 'request',
+              method: config.method || 'GET',
+              url: config.url,
+              headers: config.header || config.headers,
+              data: config.data,
+              params: config.params,
+              timestamp: new Date().toISOString(),
+              source: 'getApp().$xfetch',
+              phase: 'request'
+            });
+
+            return config;
+          });
+
+          // 安装 Mpx 响应拦截器
+          // @ts-ignore
+          app.$xfetch.interceptors.response.use(
+            function onSuccess(response: any) {
+              const requestId = response.requestConfig?.__mcp_requestId;
+              const startTime = response.requestConfig?.__mcp_startTime || Date.now();
+
+              // @ts-ignore
+              wx.__networkLogs.push({
+                id: requestId,
+                type: 'response',
+                statusCode: response.status,
+                data: response.data,
+                headers: response.header || response.headers,
+                duration: Date.now() - startTime,
+                timestamp: new Date().toISOString(),
+                source: 'getApp().$xfetch',
+                phase: 'response',
+                success: true
+              });
+
+              return response;
+            },
+            function onError(error: any) {
+              const requestId = error.requestConfig?.__mcp_requestId;
+              const startTime = error.requestConfig?.__mcp_startTime || Date.now();
+
+              // @ts-ignore
+              wx.__networkLogs.push({
+                id: requestId,
+                type: 'response',
+                statusCode: error.status || error.statusCode,
+                error: error.message || error.errMsg || String(error),
+                duration: Date.now() - startTime,
+                timestamp: new Date().toISOString(),
+                source: 'getApp().$xfetch',
+                phase: 'response',
+                success: false
+              });
+
+              throw error;
+            }
+          );
+
+          console.log('[MCP] Mpx $xfetch 拦截器安装完成');
+        }
+
+        // @ts-ignore
+        wx.__networkInterceptorsInstalled = true;
+      });
+
+      console.log('[connectDevtools] 网络监听已自动启动（包含 Mpx 框架支持）');
+    } catch (err) {
+      console.warn('[connectDevtools] 网络监听启动失败:', err);
+    }
+
     return {
       miniProgram,
       currentPage,
@@ -242,34 +490,54 @@ async function connectMode(
   options: EnhancedConnectOptions,
   startTime: number
 ): Promise<DetailedConnectResult> {
-  // 阶段1: CLI启动
-  const startupResult = await executeWithDetailedError(
-    () => startupPhase(options),
-    'startup'
-  );
-
-  // 阶段2: WebSocket连接
-  const connectionResult = await executeWithDetailedError(
-    () => connectionPhase(options, startupResult),
-    'connection'
-  );
-
-  // 健康检查
-  let healthStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
-  if (options.healthCheck) {
-    healthStatus = await executeWithDetailedError(
-      () => performHealthCheck(connectionResult.miniProgram),
-      'health_check'
+  try {
+    // 阶段1: CLI启动
+    const startupResult = await executeWithDetailedError(
+      () => startupPhase(options),
+      'startup'
     );
-  }
 
-  return {
-    ...connectionResult,
-    connectionMode: 'connect',
-    startupTime: Date.now() - startTime,
-    healthStatus,
-    processInfo: startupResult.processInfo
-  };
+    // 阶段2: WebSocket连接
+    const connectionResult = await executeWithDetailedError(
+      () => connectionPhase(options, startupResult),
+      'connection'
+    );
+
+    // 健康检查
+    let healthStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
+    if (options.healthCheck) {
+      healthStatus = await executeWithDetailedError(
+        () => performHealthCheck(connectionResult.miniProgram),
+        'health_check'
+      );
+    }
+
+    return {
+      ...connectionResult,
+      connectionMode: 'connect',
+      startupTime: Date.now() - startTime,
+      healthStatus,
+      processInfo: startupResult.processInfo
+    };
+  } catch (error) {
+    // 检查是否是会话冲突错误
+    if (error instanceof DevToolsConnectionError &&
+        error.phase === 'startup' &&
+        error.details?.reason === 'session_conflict') {
+
+      if (options.verbose) {
+        console.log('🔄 检测到会话冲突，自动回退到传统连接模式（launch）...');
+      }
+
+      // 如果允许回退，自动使用launch模式
+      if (options.fallbackMode) {
+        return await launchMode(options, startTime);
+      }
+    }
+
+    // 其他错误直接抛出
+    throw error;
+  }
 }
 
 /**
@@ -470,16 +738,25 @@ async function executeCliCommand(command: string[]): Promise<ChildProcess> {
           if (!resolved) {
             resolved = true;
             process.kill();
-            reject(new Error(
-              `自动化会话冲突: 微信开发者工具已有活跃的自动化会话。\n` +
-              `可能原因：\n` +
-              `1. 之前使用了 connect_devtools (传统模式) 并已建立连接\n` +
-              `2. 其他程序正在使用自动化功能\n` +
-              `解决方案：\n` +
-              `1. 使用已建立的连接（工具会自动检测并复用）\n` +
-              `2. 关闭微信开发者工具并重新打开\n` +
-              `3. 使用 connect_devtools 继续传统模式`
-            ));
+
+            // 创建特殊的会话冲突错误，允许上层处理回退
+            const sessionConflictError = new DevToolsConnectionError(
+              `自动化会话冲突: 微信开发者工具已有活跃的自动化会话`,
+              'startup',
+              undefined,
+              {
+                reason: 'session_conflict',
+                suggestFallback: true,
+                details: `可能原因：\n` +
+                  `1. 之前使用了 connect_devtools (传统模式) 并已建立连接\n` +
+                  `2. 其他程序正在使用自动化功能\n` +
+                  `解决方案：\n` +
+                  `1. 使用已建立的连接（工具会自动检测并复用）\n` +
+                  `2. 关闭微信开发者工具并重新打开\n` +
+                  `3. 使用 connect_devtools 继续传统模式`
+              }
+            );
+            reject(sessionConflictError);
           }
         }
 
@@ -1092,13 +1369,33 @@ export async function takeScreenshot(
     }
 
     if (!result && !path) {
-      throw new Error(`截图失败，已重试3次。最后错误: ${lastError?.message || '未知错误'}`)
+      const troubleshootingTips = `
+
+⚠️  截图功能故障排除建议：
+1. 确保微信开发者工具处于**模拟器模式**（非真机调试）
+2. 检查工具设置:
+   - 设置 → 安全设置 → 服务端口 ✅
+   - 设置 → 通用设置 → 自动化测试 ✅
+3. 检查 macOS 系统权限:
+   - 系统偏好设置 → 安全性与隐私 → 隐私 → 屏幕录制
+   - 确保微信开发者工具在允许列表中
+4. 尝试重启微信开发者工具
+5. 查看详细文档: docs/SCREENSHOT_ISSUE.md
+
+最后错误: ${lastError?.message || '未知错误'}`;
+
+      throw new Error(`截图失败，已重试3次${troubleshootingTips}`)
     }
 
     return result
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`截图失败: ${errorMessage}`);
+    // 如果错误信息已包含故障排除建议，直接抛出
+    if (errorMessage.includes('故障排除建议')) {
+      throw error;
+    }
+    // 否则添加简要提示
+    throw new Error(`${errorMessage}\n\n提示: 查看 docs/SCREENSHOT_ISSUE.md 了解详细的故障排除方法`);
   }
 }
 

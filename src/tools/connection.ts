@@ -8,6 +8,186 @@ import { defineTool, ToolCategories, ConsoleMessage, ExceptionMessage } from './
 import { connectDevtools, connectDevtoolsEnhanced, type ConnectOptions, type EnhancedConnectOptions, DevToolsConnectionError } from '../tools.js';
 
 /**
+ * 创建请求拦截器函数
+ * 从 network.ts 复制，用于自动启动网络监听
+ */
+function createRequestInterceptor() {
+  return function(this: any, options: any) {
+    // @ts-ignore - wx is available in WeChat miniprogram environment
+    const wxObj = (typeof wx !== 'undefined' ? wx : null) as any;
+
+    if (!wxObj) {
+      return this.origin(options);
+    }
+
+    if (!wxObj.__networkLogs) {
+      wxObj.__networkLogs = [];
+    }
+
+    const requestId = 'req_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+    const startTime = Date.now();
+
+    const originalSuccess = options.success;
+    options.success = function(res: any) {
+      wxObj.__networkLogs.push({
+        id: requestId,
+        type: 'request',
+        url: options.url,
+        method: options.method || 'GET',
+        headers: options.header,
+        data: options.data,
+        statusCode: res.statusCode,
+        response: res.data,
+        duration: Date.now() - startTime,
+        timestamp: new Date().toISOString(),
+        success: true
+      });
+      if (originalSuccess) originalSuccess(res);
+    };
+
+    const originalFail = options.fail;
+    options.fail = function(err: any) {
+      wxObj.__networkLogs.push({
+        id: requestId,
+        type: 'request',
+        url: options.url,
+        method: options.method || 'GET',
+        headers: options.header,
+        data: options.data,
+        error: err.errMsg || String(err),
+        duration: Date.now() - startTime,
+        timestamp: new Date().toISOString(),
+        success: false
+      });
+      if (originalFail) originalFail(err);
+    };
+
+    return this.origin(options);
+  };
+}
+
+/**
+ * 创建 uploadFile 拦截器函数
+ */
+function createUploadFileInterceptor() {
+  return function(this: any, options: any) {
+    // @ts-ignore - wx is available in WeChat miniprogram environment
+    const wxObj = (typeof wx !== 'undefined' ? wx : null) as any;
+
+    if (!wxObj) {
+      return this.origin(options);
+    }
+
+    if (!wxObj.__networkLogs) {
+      wxObj.__networkLogs = [];
+    }
+
+    const requestId = 'req_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+    const startTime = Date.now();
+
+    const originalSuccess = options.success;
+    options.success = function(res: any) {
+      wxObj.__networkLogs.push({
+        id: requestId,
+        type: 'uploadFile',
+        url: options.url,
+        headers: options.header,
+        data: {
+          filePath: options.filePath,
+          name: options.name,
+          formData: options.formData
+        },
+        statusCode: res.statusCode,
+        response: res.data,
+        duration: Date.now() - startTime,
+        timestamp: new Date().toISOString(),
+        success: true
+      });
+      if (originalSuccess) originalSuccess(res);
+    };
+
+    const originalFail = options.fail;
+    options.fail = function(err: any) {
+      wxObj.__networkLogs.push({
+        id: requestId,
+        type: 'uploadFile',
+        url: options.url,
+        headers: options.header,
+        data: {
+          filePath: options.filePath,
+          name: options.name,
+          formData: options.formData
+        },
+        error: err.errMsg || String(err),
+        duration: Date.now() - startTime,
+        timestamp: new Date().toISOString(),
+        success: false
+      });
+      if (originalFail) originalFail(err);
+    };
+
+    return this.origin(options);
+  };
+}
+
+/**
+ * 创建 downloadFile 拦截器函数
+ */
+function createDownloadFileInterceptor() {
+  return function(this: any, options: any) {
+    // @ts-ignore - wx is available in WeChat miniprogram environment
+    const wxObj = (typeof wx !== 'undefined' ? wx : null) as any;
+
+    if (!wxObj) {
+      return this.origin(options);
+    }
+
+    if (!wxObj.__networkLogs) {
+      wxObj.__networkLogs = [];
+    }
+
+    const requestId = 'req_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+    const startTime = Date.now();
+
+    const originalSuccess = options.success;
+    options.success = function(res: any) {
+      wxObj.__networkLogs.push({
+        id: requestId,
+        type: 'downloadFile',
+        url: options.url,
+        headers: options.header,
+        statusCode: res.statusCode,
+        response: {
+          tempFilePath: res.tempFilePath,
+          filePath: res.filePath
+        },
+        duration: Date.now() - startTime,
+        timestamp: new Date().toISOString(),
+        success: true
+      });
+      if (originalSuccess) originalSuccess(res);
+    };
+
+    const originalFail = options.fail;
+    options.fail = function(err: any) {
+      wxObj.__networkLogs.push({
+        id: requestId,
+        type: 'downloadFile',
+        url: options.url,
+        headers: options.header,
+        error: err.errMsg || String(err),
+        duration: Date.now() - startTime,
+        timestamp: new Date().toISOString(),
+        success: false
+      });
+      if (originalFail) originalFail(err);
+    };
+
+    return this.origin(options);
+  };
+}
+
+/**
  * 连接到微信开发者工具（传统版）
  */
 export const connectDevtoolsTool = defineTool({
@@ -89,17 +269,162 @@ export const connectDevtoolsTool = defineTool({
           console.log(`[Exception]:`, err.message, err.stack);
         });
 
-        response.appendResponseLine(`成功连接到微信开发者工具 (传统模式)`);
-        response.appendResponseLine(`项目路径: ${projectPath}`);
-        response.appendResponseLine(`当前页面: ${result.pagePath}`);
         response.appendResponseLine(`Console监听已自动启动`);
-
       } catch (consoleError) {
-        response.appendResponseLine(`成功连接到微信开发者工具 (传统模式)`);
-        response.appendResponseLine(`项目路径: ${projectPath}`);
-        response.appendResponseLine(`当前页面: ${result.pagePath}`);
         response.appendResponseLine(`警告: Console监听启动失败 - ${consoleError instanceof Error ? consoleError.message : String(consoleError)}`);
       }
+
+      // 自动启动网络监听（使用evaluate()方式绕过框架限制）
+      try {
+        if (!context.networkStorage.isMonitoring) {
+          // 使用与network.ts相同的evaluate()注入方式，增加Mpx框架支持
+          await context.miniProgram.evaluate(function() {
+            // @ts-ignore
+            if (typeof wx === 'undefined' || wx.__networkInterceptorsInstalled) {
+              return;
+            }
+
+            // @ts-ignore
+            wx.__networkLogs = wx.__networkLogs || [];
+
+            // Mpx 拦截器已在 tools.ts 的 connectDevtools() 中统一注入
+            // 此处仅保留 wx.request 回退拦截器（用于非 Mpx 框架或直接调用 wx API 的场景）
+
+            // 保存原始方法（通过getter获取）
+            // @ts-ignore
+            const _originalRequest = wx.request;
+            // @ts-ignore
+            const _originalUploadFile = wx.uploadFile;
+            // @ts-ignore
+            const _originalDownloadFile = wx.downloadFile;
+
+            // 拦截wx.request - 先删除getter
+            // @ts-ignore
+            delete wx.request;
+            // @ts-ignore
+            Object.defineProperty(wx, 'request', {
+              configurable: true,
+              value: function(options: any) {
+                const id = 'req_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+                const start = Date.now();
+                const origSuccess = options.success;
+                const origFail = options.fail;
+
+                options.success = function(res: any) {
+                  // @ts-ignore
+                  wx.__networkLogs.push({
+                    id, type: 'request', url: options.url, method: options.method || 'GET',
+                    headers: options.header, data: options.data, statusCode: res.statusCode,
+                    response: res.data, duration: Date.now() - start,
+                    timestamp: new Date().toISOString(), success: true
+                  });
+                  if (origSuccess) origSuccess.call(this, res);
+                };
+
+                options.fail = function(err: any) {
+                  // @ts-ignore
+                  wx.__networkLogs.push({
+                    id, type: 'request', url: options.url, method: options.method || 'GET',
+                    headers: options.header, data: options.data, error: err.errMsg || String(err),
+                    duration: Date.now() - start, timestamp: new Date().toISOString(), success: false
+                  });
+                  if (origFail) origFail.call(this, err);
+                };
+
+                return _originalRequest.call(this, options);
+              }
+            });
+
+            // 拦截wx.uploadFile - 先删除getter
+            // @ts-ignore
+            delete wx.uploadFile;
+            // @ts-ignore
+            Object.defineProperty(wx, 'uploadFile', {
+              configurable: true,
+              value: function(options: any) {
+                const id = 'req_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+                const start = Date.now();
+                const origSuccess = options.success;
+                const origFail = options.fail;
+
+                options.success = function(res: any) {
+                  // @ts-ignore
+                  wx.__networkLogs.push({
+                    id, type: 'uploadFile', url: options.url, headers: options.header,
+                    data: { filePath: options.filePath, name: options.name, formData: options.formData },
+                    statusCode: res.statusCode, response: res.data, duration: Date.now() - start,
+                    timestamp: new Date().toISOString(), success: true
+                  });
+                  if (origSuccess) origSuccess.call(this, res);
+                };
+
+                options.fail = function(err: any) {
+                  // @ts-ignore
+                  wx.__networkLogs.push({
+                    id, type: 'uploadFile', url: options.url, headers: options.header,
+                    data: { filePath: options.filePath, name: options.name, formData: options.formData },
+                    error: err.errMsg || String(err), duration: Date.now() - start,
+                    timestamp: new Date().toISOString(), success: false
+                  });
+                  if (origFail) origFail.call(this, err);
+                };
+
+                return _originalUploadFile.call(this, options);
+              }
+            });
+
+            // 拦截wx.downloadFile - 先删除getter
+            // @ts-ignore
+            delete wx.downloadFile;
+            // @ts-ignore
+            Object.defineProperty(wx, 'downloadFile', {
+              configurable: true,
+              value: function(options: any) {
+                const id = 'req_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+                const start = Date.now();
+                const origSuccess = options.success;
+                const origFail = options.fail;
+
+                options.success = function(res: any) {
+                  // @ts-ignore
+                  wx.__networkLogs.push({
+                    id, type: 'downloadFile', url: options.url, headers: options.header,
+                    statusCode: res.statusCode, response: { tempFilePath: res.tempFilePath, filePath: res.filePath },
+                    duration: Date.now() - start, timestamp: new Date().toISOString(), success: true
+                  });
+                  if (origSuccess) origSuccess.call(this, res);
+                };
+
+                options.fail = function(err: any) {
+                  // @ts-ignore
+                  wx.__networkLogs.push({
+                    id, type: 'downloadFile', url: options.url, headers: options.header,
+                    error: err.errMsg || String(err), duration: Date.now() - start,
+                    timestamp: new Date().toISOString(), success: false
+                  });
+                  if (origFail) origFail.call(this, err);
+                };
+
+                return _originalDownloadFile.call(this, options);
+              }
+            });
+
+            // @ts-ignore
+            wx.__networkInterceptorsInstalled = true;
+          });
+
+          context.networkStorage.isMonitoring = true;
+          context.networkStorage.startTime = new Date().toISOString();
+        }
+
+        response.appendResponseLine(`网络监听已自动启动（增强型拦截）`);
+      } catch (networkError) {
+        response.appendResponseLine(`警告: 网络监听启动失败 - ${networkError instanceof Error ? networkError.message : String(networkError)}`);
+      }
+
+      response.appendResponseLine(`成功连接到微信开发者工具 (传统模式)`);
+      response.appendResponseLine(`项目路径: ${projectPath}`);
+      response.appendResponseLine(`当前页面: ${result.pagePath}`);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -223,26 +548,140 @@ export const connectDevtoolsEnhancedTool = defineTool({
           console.log(`[Exception]:`, err.message, err.stack);
         });
 
-        // 根据结果显示详细信息
-        response.appendResponseLine(`✅ 智能连接成功`);
-        response.appendResponseLine(`项目路径: ${projectPath}`);
-        response.appendResponseLine(`当前页面: ${result.pagePath}`);
-        response.appendResponseLine(`连接模式: ${result.connectionMode}`);
-        response.appendResponseLine(`启动耗时: ${result.startupTime}ms`);
-        response.appendResponseLine(`健康状态: ${result.healthStatus}`);
+        response.appendResponseLine(`Console监听已自动启动`);
+      } catch (consoleError) {
+        response.appendResponseLine(`警告: Console监听启动失败 - ${consoleError instanceof Error ? consoleError.message : String(consoleError)}`);
+      }
 
-        if (result.processInfo) {
-          response.appendResponseLine(`进程信息: PID=${result.processInfo.pid}, Port=${result.processInfo.port}`);
+      // 自动启动网络监听（使用evaluate()方式绕过框架限制）
+      try {
+        if (!context.networkStorage.isMonitoring) {
+          // 使用evaluate()注入拦截器（与第一个工具相同的逻辑）
+          await context.miniProgram.evaluate(function() {
+            // @ts-ignore
+            if (typeof wx === 'undefined' || wx.__networkInterceptorsInstalled) return;
+            // @ts-ignore
+            wx.__networkLogs = wx.__networkLogs || [];
+
+            // Mpx 拦截器已在 tools.ts 的 connectDevtools() 中统一注入
+            // 此处仅保留 wx.request 回退拦截器（用于非 Mpx 框架或直接调用 wx API 的场景）
+
+            // @ts-ignore - 保存原始方法（通过getter获取）
+            const _originalRequest = wx.request;
+            // @ts-ignore
+            const _originalUploadFile = wx.uploadFile;
+            // @ts-ignore
+            const _originalDownloadFile = wx.downloadFile;
+
+            // @ts-ignore - 先删除getter
+            delete wx.request;
+            // @ts-ignore
+            Object.defineProperty(wx, 'request', {
+              configurable: true,
+              value: function(options: any) {
+                const id = 'req_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+                const start = Date.now();
+                const origSuccess = options.success;
+                const origFail = options.fail;
+                options.success = function(res: any) {
+                  // @ts-ignore
+                  wx.__networkLogs.push({ id, type: 'request', url: options.url, method: options.method || 'GET',
+                    headers: options.header, data: options.data, statusCode: res.statusCode,
+                    response: res.data, duration: Date.now() - start, timestamp: new Date().toISOString(), success: true });
+                  if (origSuccess) origSuccess.call(this, res);
+                };
+                options.fail = function(err: any) {
+                  // @ts-ignore
+                  wx.__networkLogs.push({ id, type: 'request', url: options.url, method: options.method || 'GET',
+                    headers: options.header, data: options.data, error: err.errMsg || String(err),
+                    duration: Date.now() - start, timestamp: new Date().toISOString(), success: false });
+                  if (origFail) origFail.call(this, err);
+                };
+                return _originalRequest.call(this, options);
+              }
+            });
+
+            // @ts-ignore - 先删除getter
+            delete wx.uploadFile;
+            // @ts-ignore
+            Object.defineProperty(wx, 'uploadFile', {
+              configurable: true,
+              value: function(options: any) {
+                const id = 'req_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+                const start = Date.now();
+                const origSuccess = options.success;
+                const origFail = options.fail;
+                options.success = function(res: any) {
+                  // @ts-ignore
+                  wx.__networkLogs.push({ id, type: 'uploadFile', url: options.url, headers: options.header,
+                    data: { filePath: options.filePath, name: options.name, formData: options.formData },
+                    statusCode: res.statusCode, response: res.data, duration: Date.now() - start,
+                    timestamp: new Date().toISOString(), success: true });
+                  if (origSuccess) origSuccess.call(this, res);
+                };
+                options.fail = function(err: any) {
+                  // @ts-ignore
+                  wx.__networkLogs.push({ id, type: 'uploadFile', url: options.url, headers: options.header,
+                    data: { filePath: options.filePath, name: options.name, formData: options.formData },
+                    error: err.errMsg || String(err), duration: Date.now() - start,
+                    timestamp: new Date().toISOString(), success: false });
+                  if (origFail) origFail.call(this, err);
+                };
+                return _originalUploadFile.call(this, options);
+              }
+            });
+
+            // @ts-ignore - 先删除getter
+            delete wx.downloadFile;
+            // @ts-ignore
+            Object.defineProperty(wx, 'downloadFile', {
+              configurable: true,
+              value: function(options: any) {
+                const id = 'req_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+                const start = Date.now();
+                const origSuccess = options.success;
+                const origFail = options.fail;
+                options.success = function(res: any) {
+                  // @ts-ignore
+                  wx.__networkLogs.push({ id, type: 'downloadFile', url: options.url, headers: options.header,
+                    statusCode: res.statusCode, response: { tempFilePath: res.tempFilePath, filePath: res.filePath },
+                    duration: Date.now() - start, timestamp: new Date().toISOString(), success: true });
+                  if (origSuccess) origSuccess.call(this, res);
+                };
+                options.fail = function(err: any) {
+                  // @ts-ignore
+                  wx.__networkLogs.push({ id, type: 'downloadFile', url: options.url, headers: options.header,
+                    error: err.errMsg || String(err), duration: Date.now() - start,
+                    timestamp: new Date().toISOString(), success: false });
+                  if (origFail) origFail.call(this, err);
+                };
+                return _originalDownloadFile.call(this, options);
+              }
+            });
+
+            // @ts-ignore
+            wx.__networkInterceptorsInstalled = true;
+          });
+
+          context.networkStorage.isMonitoring = true;
+          context.networkStorage.startTime = new Date().toISOString();
         }
 
-        response.appendResponseLine(`Console监听已自动启动`);
+        response.appendResponseLine(`网络监听已自动启动（增强型拦截）`);
+      } catch (networkError) {
+        response.appendResponseLine(`警告: 网络监听启动失败 - ${networkError instanceof Error ? networkError.message : String(networkError)}`);
+      }
 
-      } catch (consoleError) {
-        response.appendResponseLine(`✅ 智能连接成功`);
-        response.appendResponseLine(`项目路径: ${projectPath}`);
-        response.appendResponseLine(`当前页面: ${result.pagePath}`);
-        response.appendResponseLine(`连接模式: ${result.connectionMode}`);
-        response.appendResponseLine(`警告: Console监听启动失败 - ${consoleError instanceof Error ? consoleError.message : String(consoleError)}`);
+      // 根据结果显示详细信息
+      response.appendResponseLine(`✅ 智能连接成功`);
+      response.appendResponseLine(`项目路径: ${projectPath}`);
+      response.appendResponseLine(`当前页面: ${result.pagePath}`);
+      response.appendResponseLine(`连接模式: ${result.connectionMode}`);
+      response.appendResponseLine(`启动耗时: ${result.startupTime}ms`);
+      response.appendResponseLine(`健康状态: ${result.healthStatus}`);
+
+      if (result.processInfo) {
+        response.appendResponseLine(`进程信息: PID=${result.processInfo.pid}, Port=${result.processInfo.port}`);
       }
 
     } catch (error) {

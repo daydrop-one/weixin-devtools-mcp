@@ -29,7 +29,8 @@ import {
   ToolContext,
   ToolRequest,
   ToolResponse,
-  ConsoleStorage
+  ConsoleStorage,
+  NetworkStorage
 } from './tools/index.js';
 
 // 导入zod-to-json-schema用于schema转换
@@ -72,6 +73,12 @@ const state = {
     isMonitoring: false,
     startTime: null
   } as ConsoleStorage, // Console存储
+  networkStorage: {
+    requests: [],
+    isMonitoring: false,
+    startTime: null,
+    originalMethods: {}
+  } as NetworkStorage, // 网络存储
 };
 
 /**
@@ -111,7 +118,8 @@ function createToolContext(): ToolContext {
     miniProgram: state.miniProgram,
     currentPage: state.currentPage,
     elementMap: state.elementMap,
-    consoleStorage: state.consoleStorage
+    consoleStorage: state.consoleStorage,
+    networkStorage: state.networkStorage
   };
 }
 
