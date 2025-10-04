@@ -12,8 +12,31 @@ vi.mock('miniprogram-automator', () => ({
   }
 }))
 
+// Mock 异步延迟函数
+vi.mock('util', () => ({
+  promisify: (fn: any) => {
+    if (fn.name === 'setTimeout') {
+      return async (ms: number) => {
+        return new Promise(resolve => setTimeout(resolve, ms))
+      }
+    }
+    return fn
+  }
+}))
+
+// Mock tools.js 中的连接函数
+vi.mock('../src/tools.js', async () => {
+  const actual = await vi.importActual('../src/tools.js') as any;
+  return {
+    connectDevtools: actual.connectDevtools, // 使用真实实现
+    waitForWebSocketReady: actual.waitForWebSocketReady, // 使用真实实现
+    checkDevToolsRunning: actual.checkDevToolsRunning,   // 使用真实实现，通过mock fetch控制行为
+    DevToolsConnectionError: actual.DevToolsConnectionError
+  };
+})
+
 // 导入被测试的模块和原始对象
-import { connectDevtools, type ConnectOptions } from '../src/tools.js'
+import { connectDevtools, waitForWebSocketReady, checkDevToolsRunning, type ConnectOptions } from '../src/tools.js'
 import automator from 'miniprogram-automator'
 
 describe('connect_devtools 工具测试', () => {
@@ -25,7 +48,9 @@ describe('connect_devtools 工具测试', () => {
   // 创建测试用的MiniProgram对象
   const testMiniProgram = {
     currentPage: vi.fn(),
-    screenshot: vi.fn()
+    screenshot: vi.fn(),
+    mockWxMethod: vi.fn().mockResolvedValue(undefined),
+    evaluate: vi.fn().mockResolvedValue(undefined)
   } as any
 
   beforeEach(() => {
@@ -115,7 +140,7 @@ describe('connect_devtools 工具测试', () => {
 
     it('应该处理 automator.launch 失败', async () => {
       const options: ConnectOptions = {
-        projectPath: '/path/to/invalid/project'
+        projectPath: '/tmp'  // 使用存在的路径，让 mock 失败而不是路径验证失败
       }
       const errorMessage = '项目不存在'
 
@@ -181,7 +206,7 @@ describe('connect_devtools 工具测试', () => {
 
     it('应该包装原始错误信息', async () => {
       const options: ConnectOptions = {
-        projectPath: '/invalid/path'
+        projectPath: '/tmp'  // 使用存在的路径
       }
       const originalError = new Error('找不到项目配置文件')
 
@@ -193,7 +218,7 @@ describe('connect_devtools 工具测试', () => {
 
     it('应该处理非Error类型的异常', async () => {
       const options: ConnectOptions = {
-        projectPath: '/invalid/path'
+        projectPath: '/tmp'  // 使用存在的路径
       }
 
       vi.mocked(automator.launch).mockRejectedValue('字符串错误')
@@ -231,6 +256,193 @@ describe('connect_devtools 工具测试', () => {
       expect(result.pagePath).toBe(customPagePath)
     })
   })
+})
+
+/**
+ * waitForWebSocketReady 单元测试
+ * 测试 WebSocket 服务就绪等待逻辑
+ */
+describe('waitForWebSocketReady 单元测试', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.resetAllMocks()
+  })
+
+  it('应该在超时后抛出正确的错误消息', async () => {
+    // Mock fetch 拒绝连接，模拟服务未启动
+    global.fetch = vi.fn().mockRejectedValue(new Error('Connection refused'))
+
+    const port = 9420
+    const timeout = 2000 // 短超时便于测试
+    const verbose = false
+
+    const startTime = Date.now()
+
+    await expect(waitForWebSocketReady(port, timeout, verbose))
+      .rejects
+      .toThrow(/WebSocket服务启动超时，端口: 9420，已等待: \d+ms/)
+
+    const elapsed = Date.now() - startTime
+
+    // 验证等待时间接近超时时间
+    expect(elapsed).toBeGreaterThanOrEqual(timeout)
+    expect(elapsed).toBeLessThan(timeout + 1500) // 允许1.5秒误差
+  })
+
+  it('应该在服务立即可用时快速返回', async () => {
+    // Mock fetch 成功响应，模拟服务已启动
+    global.fetch = vi.fn().mockResolvedValue({ ok: true } as Response)
+
+    const port = 9420
+    const timeout = 5000
+    const verbose = false
+
+    const startTime = Date.now()
+
+    await waitForWebSocketReady(port, timeout, verbose)
+
+    const elapsed = Date.now() - startTime
+
+    // 应该几乎立即返回
+    expect(elapsed).toBeLessThan(1000)
+  })
+
+  it('应该在延迟后成功检测到服务', async () => {
+    let callCount = 0
+
+    // 前5次调用失败,第6次成功
+    global.fetch = vi.fn().mockImplementation(async () => {
+      callCount++
+      if (callCount > 5) {
+        return { ok: true } as Response
+      }
+      throw new Error('Connection refused')
+    })
+
+    const port = 9420
+    const timeout = 10000
+    const verbose = false
+
+    const startTime = Date.now()
+
+    await waitForWebSocketReady(port, timeout, verbose)
+
+    const elapsed = Date.now() - startTime
+
+    // 应该在约 2.5-3 秒内返回 (前5次失败,每次等待500ms)
+    expect(elapsed).toBeGreaterThanOrEqual(2000)
+    expect(elapsed).toBeLessThan(4000)
+  })
+
+  it('应该在verbose模式下输出详细日志', async () => {
+    // Mock console.log 来捕获日志输出
+    const consoleLogSpy = vi.spyOn(console, 'log')
+
+    // Mock fetch 成功响应，模拟服务已启动
+    global.fetch = vi.fn().mockResolvedValue({ ok: true } as Response)
+
+    const port = 9420
+    const timeout = 5000
+    const verbose = true
+
+    await waitForWebSocketReady(port, timeout, verbose)
+
+    // 验证输出了启动日志
+    expect(consoleLogSpy).toHaveBeenCalledWith(
+      expect.stringContaining('等待WebSocket服务启动')
+    )
+    expect(consoleLogSpy).toHaveBeenCalledWith(
+      expect.stringContaining('端口: 9420')
+    )
+
+    // 验证输出了成功日志
+    expect(consoleLogSpy).toHaveBeenCalledWith(
+      expect.stringContaining('WebSocket服务已启动')
+    )
+
+    consoleLogSpy.mockRestore()
+  })
+
+  it('应该验证错误消息包含端口和经过时间', async () => {
+    // Mock fetch 拒绝连接，模拟服务未启动
+    global.fetch = vi.fn().mockRejectedValue(new Error('Connection refused'))
+
+    const port = 9440
+    const timeout = 1500
+    const verbose = false
+
+    try {
+      await waitForWebSocketReady(port, timeout, verbose)
+      // 不应该到这里
+      expect(false).toBe(true)
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error)
+      const errorMessage = (error as Error).message
+
+      // 验证错误消息格式
+      expect(errorMessage).toContain('WebSocket服务启动超时')
+      expect(errorMessage).toContain(`端口: ${port}`)
+      expect(errorMessage).toMatch(/已等待: \d+ms/)
+
+      // 验证端口号正确
+      expect(errorMessage).toContain('9440')
+
+      // 提取经过时间并验证
+      const match = errorMessage.match(/已等待: (\d+)ms/)
+      expect(match).not.toBeNull()
+      if (match) {
+        const elapsed = parseInt(match[1], 10)
+        expect(elapsed).toBeGreaterThanOrEqual(timeout)
+        expect(elapsed).toBeLessThan(timeout + 1500)
+      }
+    }
+  })
+
+  it('应该验证渐进式重试逻辑', async () => {
+    let callCount = 0
+    const callTimestamps: number[] = []
+
+    // 记录每次调用的时间戳
+    global.fetch = vi.fn().mockImplementation(async () => {
+      callCount++
+      callTimestamps.push(Date.now())
+      // 让测试在第15次调用时成功
+      if (callCount >= 15) {
+        return { ok: true } as Response
+      }
+      throw new Error('Connection refused')
+    })
+
+    const port = 9420
+    const timeout = 20000
+    const verbose = false
+
+    await waitForWebSocketReady(port, timeout, verbose)
+
+    // 验证至少调用了15次
+    expect(callCount).toBeGreaterThanOrEqual(15)
+
+    // 验证前10次的间隔约为500ms
+    for (let i = 1; i < Math.min(10, callTimestamps.length); i++) {
+      const interval = callTimestamps[i] - callTimestamps[i - 1]
+      // 前10次应该约为500ms间隔
+      expect(interval).toBeGreaterThanOrEqual(400)
+      expect(interval).toBeLessThan(700)
+    }
+
+    // 验证第10次之后的间隔约为1000ms
+    if (callTimestamps.length > 11) {
+      for (let i = 11; i < callTimestamps.length; i++) {
+        const interval = callTimestamps[i] - callTimestamps[i - 1]
+        // 第10次之后应该约为1000ms间隔
+        expect(interval).toBeGreaterThanOrEqual(900)
+        expect(interval).toBeLessThan(1300)
+      }
+    }
+  }, 30000) // 增加测试超时时间
 })
 
 /**

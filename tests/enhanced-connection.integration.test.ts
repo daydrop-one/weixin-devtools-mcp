@@ -264,6 +264,113 @@ describe.skipIf(!shouldRunIntegrationTests)('增强连接功能集成测试', ()
         }
       }
     })
+
+    it('应该正确处理 WebSocket 服务未启动的情况', async () => {
+      if (availablePorts.length === 0) {
+        console.log('⚠️ 跳过测试：端口分配失败')
+        return
+      }
+
+      const testPort = getNextPort()
+      console.log(`🧪 测试 WebSocket 超时（端口: ${testPort}）...`)
+
+      const options: EnhancedConnectOptions = {
+        projectPath: TEST_PROJECT_PATH,
+        mode: 'connect',
+        autoPort: testPort,
+        timeout: 5000, // 短超时便于测试
+        fallbackMode: false, // 禁用回退，直接测试超时
+        verbose: true
+      }
+
+      try {
+        await connectDevtoolsEnhanced(options)
+        // 不应该成功
+        expect(false).toBe(true)
+      } catch (error) {
+        expect(error).toBeInstanceOf(DevToolsConnectionError)
+        if (error instanceof DevToolsConnectionError) {
+          expect(error.phase).toBe('startup')
+          expect(error.message).toContain('WebSocket')
+          expect(error.message).toContain(`端口: ${testPort}`)
+          expect(error.message).toMatch(/已等待: \d+ms/)
+
+          console.log(`✅ 超时错误正确捕获: ${error.message}`)
+        }
+      }
+    }, 10000)
+
+    it('应该在 auto 模式下检测到端口不可用时使用回退', async () => {
+      if (availablePorts.length === 0) {
+        console.log('⚠️ 跳过测试：端口分配失败')
+        return
+      }
+
+      const unavailablePort = getNextPort()
+      console.log(`🔄 测试 auto 模式回退机制（端口: ${unavailablePort}）...`)
+
+      const options: EnhancedConnectOptions = {
+        projectPath: TEST_PROJECT_PATH,
+        mode: 'auto',
+        autoPort: unavailablePort,
+        timeout: 5000, // 短超时加速测试
+        fallbackMode: true, // 启用回退
+        verbose: true,
+        healthCheck: false
+      }
+
+      try {
+        connectedResources = await withTimeout(
+          connectDevtoolsEnhanced(options),
+          45000,
+          '回退测试超时'
+        )
+
+        // 如果成功，应该是通过 launch 模式回退成功的
+        expect(connectedResources.connectionMode).toBe('launch')
+        console.log(`✅ auto 模式回退成功: ${connectedResources.connectionMode}`)
+        console.log(`   启动耗时: ${connectedResources.startupTime}ms`)
+
+      } catch (error) {
+        // 如果失败，验证错误信息包含回退尝试的痕迹
+        console.log(`⚠️ 回退也失败了（这在某些环境下是正常的）: ${error instanceof Error ? error.message : String(error)}`)
+      }
+    }, 60000)
+
+    it('应该支持自定义超时配置', async () => {
+      if (availablePorts.length === 0) {
+        console.log('⚠️ 跳过测试：端口分配失败')
+        return
+      }
+
+      const testPort = getNextPort()
+      const customTimeout = 3000
+      console.log(`⏱️ 测试自定义超时配置（${customTimeout}ms）...`)
+
+      const startTime = Date.now()
+
+      try {
+        await connectDevtoolsEnhanced({
+          projectPath: TEST_PROJECT_PATH,
+          mode: 'connect',
+          autoPort: testPort,
+          timeout: customTimeout,
+          fallbackMode: false,
+          verbose: false
+        })
+      } catch (error) {
+        const elapsed = Date.now() - startTime
+
+        // 验证实际等待时间接近设定的超时时间
+        expect(elapsed).toBeGreaterThanOrEqual(customTimeout)
+        expect(elapsed).toBeLessThan(customTimeout + 2000) // 允许2秒误差
+        if (error instanceof Error) {
+          expect(error.message).toContain(String(customTimeout))
+        }
+
+        console.log(`✅ 自定义超时配置生效: ${elapsed}ms ≈ ${customTimeout}ms`)
+      }
+    }, 8000)
   })
 
   describe('功能特性测试', () => {

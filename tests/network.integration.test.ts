@@ -14,8 +14,7 @@ import {
 } from './test-utils.js';
 
 // 只在环境变量RUN_INTEGRATION_TESTS为true时运行
-// const shouldRun = process.env.RUN_INTEGRATION_TESTS === 'true';
-const shouldRun = true;
+const shouldRun = process.env.RUN_INTEGRATION_TESTS === 'true';
 
 // 测试配置
 const TEST_PROJECT_PATH = '/Users/didi/workspace/wooPro/weixin-devtools-mcp/playground/wx';

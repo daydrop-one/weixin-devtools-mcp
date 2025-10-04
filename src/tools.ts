@@ -5,6 +5,7 @@
 
 import automator from "miniprogram-automator";
 import path from "path";
+import fs from "fs";
 import { spawn, ChildProcess } from "child_process";
 import { promisify } from "util";
 const sleep = promisify(setTimeout);
@@ -103,6 +104,11 @@ export async function connectDevtools(options: ConnectOptions): Promise<ConnectR
     } else if (!path.isAbsolute(projectPath)) {
       // 如果不是绝对路径，转换为绝对路径
       resolvedProjectPath = path.resolve(process.cwd(), projectPath);
+    }
+
+    // 验证项目路径是否存在
+    if (!fs.existsSync(resolvedProjectPath)) {
+      throw new Error(`Project path '${resolvedProjectPath}' doesn't exist`);
     }
 
     // 构建 automator.launch 的选项
@@ -398,8 +404,27 @@ export async function connectDevtoolsEnhanced(
 
   const startTime = Date.now();
 
+  // 验证项目路径（在所有模式执行前统一验证）
+  if (!options.projectPath) {
+    throw new Error("项目路径是必需的");
+  }
+
+  // 解析并验证项目路径
+  let resolvedProjectPath = options.projectPath;
+  if (options.projectPath.startsWith('@playground/')) {
+    const relativePath = options.projectPath.replace('@playground/', 'playground/');
+    resolvedProjectPath = path.resolve(process.cwd(), relativePath);
+  } else if (!path.isAbsolute(options.projectPath)) {
+    resolvedProjectPath = path.resolve(process.cwd(), options.projectPath);
+  }
+
+  if (!fs.existsSync(resolvedProjectPath)) {
+    throw new Error(`Project path '${resolvedProjectPath}' doesn't exist`);
+  }
+
   if (verbose) {
     console.log(`开始连接微信开发者工具，模式: ${mode}`);
+    console.log(`项目路径: ${resolvedProjectPath}`);
   }
 
   try {
@@ -422,64 +447,59 @@ export async function connectDevtoolsEnhanced(
 }
 
 /**
- * 智能连接逻辑
+ * 判断错误是否为可通过 connectMode 解决的会话冲突错误
+ */
+function isSessionConflictError(error: any): boolean {
+  if (error instanceof DevToolsConnectionError) {
+    return error.details?.reason === 'session_conflict';
+  }
+  const message = error?.message || '';
+  return message.includes('already') ||
+         message.includes('session') ||
+         message.includes('conflict') ||
+         message.includes('automation');
+}
+
+/**
+ * 智能连接逻辑（优化版）
+ *
+ * 策略说明：
+ * 1. 默认使用 launchMode（依赖 automator.launch 的智能处理）
+ *    - automator.launch 会自动检测IDE状态和项目匹配
+ *    - 自动复用现有会话或打开新项目
+ * 2. 仅在会话冲突等特定错误时回退到 connectMode
+ * 3. 移除了复杂的端口检测和项目验证逻辑（交给官方库处理）
  */
 async function intelligentConnect(
   options: EnhancedConnectOptions,
   startTime: number
 ): Promise<DetailedConnectResult> {
-  // 策略1: 如果用户指定了端口，使用指定的端口
-  let port = options.autoPort || options.port;
-
-  // 策略2: 如果没有指定端口，尝试自动检测
-  if (!port) {
-    if (options.verbose) {
-      console.log('未指定端口，尝试自动检测...');
-    }
-
-    const detectedPort = await detectIDEPort(options.verbose);
-    if (detectedPort) {
-      port = detectedPort;
-      if (options.verbose) {
-        console.log(`✅ 将使用检测到的端口: ${port}`);
-      }
-    } else {
-      // 未检测到，使用默认端口
-      port = 9420;
-      if (options.verbose) {
-        console.log(`⚠️ 未检测到运行端口，使用默认端口: ${port}`);
-      }
-    }
-  }
-
-  // 更新options中的端口
-  const updatedOptions = { ...options, autoPort: port };
-
-  // 检测开发者工具是否已运行
-  const isRunning = await checkDevToolsRunning(port);
-
   if (options.verbose) {
-    console.log(`微信开发者工具运行状态 (端口 ${port}): ${isRunning ? '✅ 运行中' : '❌ 未运行'}`);
+    console.log('🎯 智能连接策略: 优先使用 launchMode（自动处理项目验证和会话复用）');
   }
 
-  if (isRunning) {
-    // 如果已启动，尝试直接连接
-    try {
-      return await connectMode(updatedOptions, startTime);
-    } catch (error) {
-      if (options.verbose) {
-        console.log('直接连接失败，尝试回退到启动模式');
-      }
-
-      // 如果允许回退，使用Launch模式
-      if (options.fallbackMode) {
-        return await launchMode(updatedOptions, startTime);
-      }
-      throw error;
+  try {
+    // 默认使用 launchMode
+    // automator.launch() 会自动：
+    // 1. 检测IDE是否运行
+    // 2. 验证项目路径是否匹配
+    // 3. 复用现有会话或打开新项目
+    return await launchMode(options, startTime);
+  } catch (error) {
+    if (options.verbose) {
+      console.log('⚠️ launchMode 失败，分析错误类型...');
     }
-  } else {
-    // 未启动，使用两阶段启动
-    return await connectMode(updatedOptions, startTime);
+
+    // 仅在特定可恢复错误时回退到 connectMode
+    if (options.fallbackMode && isSessionConflictError(error)) {
+      if (options.verbose) {
+        console.log('🔄 检测到会话冲突，尝试回退到 connectMode');
+      }
+      return await connectMode(options, startTime);
+    }
+
+    // 其他错误直接抛出
+    throw error;
   }
 }
 
@@ -805,8 +825,9 @@ async function executeCliCommand(command: string[]): Promise<ChildProcess> {
 
 /**
  * 等待WebSocket服务就绪
+ * @public 导出供测试使用
  */
-async function waitForWebSocketReady(port: number, timeout: number, verbose: boolean = false): Promise<void> {
+export async function waitForWebSocketReady(port: number, timeout: number, verbose: boolean = false): Promise<void> {
   const startTime = Date.now();
   let attempt = 0;
   const maxAttempts = Math.ceil(timeout / 1000); // 每秒检查一次
@@ -880,7 +901,7 @@ async function checkWebSocketDirectly(port: number): Promise<boolean> {
 export async function checkDevToolsRunning(port: number): Promise<boolean> {
   try {
     // 尝试连接WebSocket来检测服务状态
-    const response = await fetch(`http://localhost:${port}/json/version`, {
+    const response = await fetch(`http://localhost:${port}`, {
       signal: AbortSignal.timeout(1000)
     });
     return response.ok;
@@ -1009,10 +1030,12 @@ async function executeWithDetailedError<T>(
   try {
     return await operation();
   } catch (error) {
+    const originalError = error instanceof Error ? error : new Error(String(error));
+    // 保留原始错误消息，不要用通用的"阶段失败"覆盖
     throw new DevToolsConnectionError(
-      `${phase}阶段失败`,
+      originalError.message,
       phase,
-      error instanceof Error ? error : new Error(String(error)),
+      originalError,
       { timestamp: new Date().toISOString() }
     );
   }
