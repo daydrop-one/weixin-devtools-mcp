@@ -67,8 +67,10 @@ interface PageSnapshot {
  * 全局状态管理
  */
 const state = {
-  miniProgram: null as any,  // MiniProgram 实例
-  currentPage: null as any,  // 当前页面实例
+  /** MiniProgram 实例 (来自 miniprogram-automator) */
+  miniProgram: null as any,
+  /** 当前页面实例 (来自 miniprogram-automator 的 Page 类型) */
+  currentPage: null as any,
   elementMap: new Map<string, ElementMapInfo>(), // uid -> ElementMapInfo 映射
   consoleStorage: {
     consoleMessages: [],
@@ -115,6 +117,47 @@ class MockResponse implements ToolResponse {
   }
 }
 
+/**
+ * 通过 UID 获取元素的实现（index.ts 版本）
+ */
+async function getElementByUidForIndex(uid: string): Promise<any> {
+  if (!state.currentPage) {
+    throw new Error('请先连接微信开发者工具并获取当前页面');
+  }
+
+  const mapInfo = state.elementMap.get(uid);
+  if (!mapInfo) {
+    throw new Error(
+      `找不到 UID: ${uid}\n` +
+      `请先调用 get_page_snapshot 工具获取页面快照`
+    );
+  }
+
+  console.log(`[getElementByUid] UID: ${uid}, Selector: ${mapInfo.selector}, Index: ${mapInfo.index}`);
+
+  const elements = await state.currentPage.$$(mapInfo.selector);
+  if (!elements || elements.length === 0) {
+    throw new Error(
+      `选择器 "${mapInfo.selector}" 未找到任何元素\n` +
+      `页面可能已发生变化，请重新获取快照`
+    );
+  }
+
+  if (mapInfo.index >= elements.length) {
+    throw new Error(
+      `元素索引 ${mapInfo.index} 超出范围（选择器 "${mapInfo.selector}" 共找到 ${elements.length} 个元素）\n` +
+      `页面可能已发生变化，请重新获取快照`
+    );
+  }
+
+  const element = elements[mapInfo.index];
+  if (!element) {
+    throw new Error(`无法获取索引 ${mapInfo.index} 的元素`);
+  }
+
+  return element;
+}
+
 // 状态转换函数 - 将全局状态转换为ToolContext
 function createToolContext(): ToolContext {
   return {
@@ -122,7 +165,8 @@ function createToolContext(): ToolContext {
     currentPage: state.currentPage,
     elementMap: state.elementMap,
     consoleStorage: state.consoleStorage,
-    networkStorage: state.networkStorage
+    networkStorage: state.networkStorage,
+    getElementByUid: getElementByUidForIndex
   };
 }
 

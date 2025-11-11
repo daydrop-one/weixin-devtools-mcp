@@ -33,19 +33,52 @@ import {
 } from '../../src/tools.js'
 
 describe('input.ts 新功能测试', () => {
+  // 创建 mock 元素对象
+  const createMockElement = () => ({
+    tap: vi.fn().mockResolvedValue(undefined),
+    input: vi.fn().mockResolvedValue(undefined),
+    value: '',
+    trigger: vi.fn().mockResolvedValue(undefined),
+  });
+
   // 创建测试用的上下文对象
   const mockContext = {
     currentPage: {
-      path: '/pages/test/test'
+      path: '/pages/test/test',
+      $$: async (selector: string) => {
+        // 根据选择器返回 mock 元素数组
+        return [createMockElement()];
+      }
     },
     elementMap: new Map([
-      ['input-1', 'input[type="text"]'],
-      ['picker-1', 'picker[data-test="select"]'],
-      ['switch-1', 'switch[data-test="toggle"]'],
-      ['slider-1', 'slider[data-test="range"]'],
-      ['button-1', 'button[data-test="submit"]']
+      ['input-1', { selector: 'input[type="text"]', index: 0 }],
+      ['picker-1', { selector: 'picker[data-test="select"]', index: 0 }],
+      ['switch-1', { selector: 'switch[data-test="toggle"]', index: 0 }],
+      ['slider-1', { selector: 'slider[data-test="range"]', index: 0 }],
+      ['button-1', { selector: 'button[data-test="submit"]', index: 0 }]
     ]),
-    miniProgram: {}
+    miniProgram: {},
+    consoleStorage: {
+      consoleMessages: [],
+      exceptionMessages: [],
+      isMonitoring: false,
+      startTime: null
+    },
+    networkStorage: {
+      requests: [],
+      isMonitoring: false,
+      startTime: null,
+      originalMethods: {}
+    },
+    // 实现 getElementByUid 方法
+    getElementByUid: async (uid: string) => {
+      const mapInfo = mockContext.elementMap.get(uid);
+      if (!mapInfo) {
+        throw new Error(`找不到 UID: ${uid}`);
+      }
+      const elements = await mockContext.currentPage.$$(mapInfo.selector);
+      return elements[mapInfo.index];
+    }
   } as any
 
   // 创建测试用的请求和响应对象
@@ -457,17 +490,11 @@ describe('input.ts 新功能测试', () => {
       })
       const response = createMockResponse()
 
-      vi.mocked(clickElement).mockResolvedValue(undefined)
-
       await clickTool.handler(request, response, mockContext)
 
-      expect(clickElement).toHaveBeenCalledWith(
-        mockContext.currentPage,
-        mockContext.elementMap,
-        { uid: 'button-1', dblClick: false }
-      )
-
+      // 验证响应内容
       expect(response.appendResponseLine).toHaveBeenCalledWith('点击元素成功')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('UID: button-1')
       expect(response.setIncludeSnapshot).toHaveBeenCalledWith(true)
     })
 
@@ -480,17 +507,12 @@ describe('input.ts 新功能测试', () => {
       })
       const response = createMockResponse()
 
-      vi.mocked(inputText).mockResolvedValue(undefined)
-
       await inputTextTool.handler(request, response, mockContext)
 
-      expect(inputText).toHaveBeenCalledWith(
-        mockContext.currentPage,
-        mockContext.elementMap,
-        { uid: 'input-1', text: '测试文本', clear: false, append: false }
-      )
-
+      // 验证响应内容
       expect(response.appendResponseLine).toHaveBeenCalledWith('输入文本成功')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('UID: input-1')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('内容: 测试文本')
       expect(response.setIncludeSnapshot).toHaveBeenCalledWith(true)
     })
   })

@@ -32,26 +32,44 @@ export const clickTool = defineTool({
   handler: async (request, response, context) => {
     const { uid, dblClick } = request.params;
 
-    if (!context.currentPage) {
-      throw new Error('请先获取当前页面');
+    // 使用统一的元素获取方法
+    const element = await context.getElementByUid(uid);
+
+    // 记录点击前的页面路径
+    const beforePath = await context.currentPage.path;
+    console.log(`[Click] 点击前页面: ${beforePath}`);
+
+    // 执行点击操作
+    await element.tap();
+    console.log(`[Click] 已执行 tap() 操作`);
+
+    // 如果是双击，再点击一次
+    if (dblClick) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await element.tap();
+      console.log(`[Click] 已执行第二次 tap() (双击)`);
     }
 
+    // 等待页面响应
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // 记录点击后的页面路径
     try {
-      const options: ClickOptions = { uid, dblClick };
-      await clickElement(context.currentPage, context.elementMap, options);
-
-      const action = dblClick ? '双击' : '点击';
-      response.appendResponseLine(`${action}元素成功`);
-      response.appendResponseLine(`UID: ${uid}`);
-
-      // 点击后可能页面发生变化，建议包含快照
-      response.setIncludeSnapshot(true);
-
+      const afterPath = await context.currentPage.path;
+      console.log(`[Click] 点击后页面: ${afterPath}`);
+      if (beforePath !== afterPath) {
+        console.log(`[Click] ✅ 页面已切换: ${beforePath} → ${afterPath}`);
+      }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`点击元素失败: ${errorMessage}`);
-      throw error;
+      console.warn(`[Click] 无法获取点击后的页面路径:`, error);
     }
+
+    const action = dblClick ? '双击' : '点击';
+    response.appendResponseLine(`${action}元素成功`);
+    response.appendResponseLine(`UID: ${uid}`);
+
+    // 点击后可能页面发生变化，建议包含快照
+    response.setIncludeSnapshot(true);
   },
 });
 
@@ -73,30 +91,36 @@ export const inputTextTool = defineTool({
   handler: async (request, response, context) => {
     const { uid, text, clear, append } = request.params;
 
-    if (!context.currentPage) {
-      throw new Error('请先获取当前页面');
+    // 使用统一的元素获取方法
+    const element = await context.getElementByUid(uid);
+
+    // 处理输入逻辑
+    if (clear) {
+      // 清空并输入
+      element.value = '';
+      await element.input(text);
+      console.log(`[InputText] 清空并输入: ${text}`);
+    } else if (append) {
+      // 追加内容
+      const currentValue = element.value || '';
+      await element.input(currentValue + text);
+      console.log(`[InputText] 追加文本: ${text}`);
+    } else {
+      // 直接输入
+      await element.input(text);
+      console.log(`[InputText] 输入文本: ${text}`);
     }
 
-    try {
-      const options: InputTextOptions = { uid, text, clear, append };
-      await inputText(context.currentPage, context.elementMap, options);
+    let action = '输入文本';
+    if (clear) action = '清空并输入文本';
+    if (append) action = '追加文本';
 
-      let action = '输入文本';
-      if (clear) action = '清空并输入文本';
-      if (append) action = '追加文本';
+    response.appendResponseLine(`${action}成功`);
+    response.appendResponseLine(`UID: ${uid}`);
+    response.appendResponseLine(`内容: ${text}`);
 
-      response.appendResponseLine(`${action}成功`);
-      response.appendResponseLine(`UID: ${uid}`);
-      response.appendResponseLine(`内容: ${text}`);
-
-      // 输入后页面可能发生变化
-      response.setIncludeSnapshot(true);
-
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`输入文本失败: ${errorMessage}`);
-      throw error;
-    }
+    // 输入后页面可能发生变化
+    response.setIncludeSnapshot(true);
   },
 });
 

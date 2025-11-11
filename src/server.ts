@@ -24,6 +24,52 @@ import {
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 /**
+ * 通过 UID 获取元素的实现
+ */
+async function getElementByUid(uid: string): Promise<any> {
+  // 1. 检查页面是否已连接
+  if (!globalContext.currentPage) {
+    throw new Error('请先连接微信开发者工具并获取当前页面');
+  }
+
+  // 2. 检查 UID 是否存在于 elementMap
+  const mapInfo = globalContext.elementMap.get(uid);
+  if (!mapInfo) {
+    throw new Error(
+      `找不到 UID: ${uid}\n` +
+      `请先调用 get_page_snapshot 工具获取页面快照`
+    );
+  }
+
+  console.log(`[getElementByUid] UID: ${uid}, Selector: ${mapInfo.selector}, Index: ${mapInfo.index}`);
+
+  // 3. 使用选择器获取所有匹配元素
+  const elements = await globalContext.currentPage.$$(mapInfo.selector);
+  if (!elements || elements.length === 0) {
+    throw new Error(
+      `选择器 "${mapInfo.selector}" 未找到任何元素\n` +
+      `页面可能已发生变化，请重新获取快照`
+    );
+  }
+
+  // 4. 检查索引是否有效
+  if (mapInfo.index >= elements.length) {
+    throw new Error(
+      `元素索引 ${mapInfo.index} 超出范围（选择器 "${mapInfo.selector}" 共找到 ${elements.length} 个元素）\n` +
+      `页面可能已发生变化，请重新获取快照`
+    );
+  }
+
+  // 5. 返回目标元素
+  const element = elements[mapInfo.index];
+  if (!element) {
+    throw new Error(`无法获取索引 ${mapInfo.index} 的元素`);
+  }
+
+  return element;
+}
+
+/**
  * 全局上下文状态
  */
 const globalContext: ToolContext = {
@@ -42,6 +88,7 @@ const globalContext: ToolContext = {
     startTime: null,
     originalMethods: {},
   },
+  getElementByUid,
 };
 
 /**

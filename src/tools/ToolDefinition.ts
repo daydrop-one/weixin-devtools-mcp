@@ -100,11 +100,30 @@ export interface NetworkStorage {
  * 工具处理器上下文
  */
 export interface ToolContext {
+  /**
+   * 小程序实例 (miniprogram-automator的MiniProgram类型)
+   * 通过 automator.connect() 或 automator.launch() 获得
+   */
   miniProgram: any;
+
+  /**
+   * 当前页面实例 (miniprogram-automator的Page类型)
+   * 通过 miniProgram.currentPage() 获得
+   */
   currentPage: any;
+
   elementMap: Map<string, ElementMapInfo>;
   consoleStorage: ConsoleStorage;
   networkStorage: NetworkStorage;
+
+  /**
+   * 通过 UID 获取元素
+   * 统一处理：连接检查、快照检查、元素查找、索引定位
+   * @param uid 元素的唯一标识符
+   * @returns 元素对象
+   * @throws 如果页面未连接、UID 不存在、元素未找到等
+   */
+  getElementByUid(uid: string): Promise<any>;
 }
 
 /**
