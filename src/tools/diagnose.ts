@@ -127,8 +127,11 @@ export const diagnoseConnectionTool = defineTool({
       response.appendResponseLine(`   当前工作目录: ${process.cwd()}`);
       response.appendResponseLine(`   元素映射大小: ${context.elementMap.size}`);
       response.appendResponseLine(`   Console监听状态: ${context.consoleStorage.isMonitoring ? '已启动' : '未启动'}`);
-      response.appendResponseLine(`   Console消息数量: ${context.consoleStorage.consoleMessages.length}`);
-      response.appendResponseLine(`   异常消息数量: ${context.consoleStorage.exceptionMessages.length}`);
+      // 使用新的 navigations 结构统计消息数量
+      const totalMessages = context.consoleStorage.navigations.reduce((sum, session) => sum + session.messages.length, 0);
+      const totalExceptions = context.consoleStorage.navigations.reduce((sum, session) => sum + session.exceptions.length, 0);
+      response.appendResponseLine(`   Console消息数量: ${totalMessages}`);
+      response.appendResponseLine(`   异常消息数量: ${totalExceptions}`);
     }
 
     // 7. 总结和建议

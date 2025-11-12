@@ -258,7 +258,16 @@ export const connectDevtoolsTool = defineTool({
             timestamp: new Date().toISOString(),
             source: 'miniprogram'
           };
-          context.consoleStorage.consoleMessages.push(consoleMessage);
+          // 使用新的 navigations 结构
+          const currentSession = context.consoleStorage.navigations[0];
+          if (currentSession) {
+            // 分配 msgid（如果有 idGenerator）
+            if (context.consoleStorage.idGenerator) {
+              consoleMessage.msgid = context.consoleStorage.idGenerator();
+              context.consoleStorage.messageIdMap.set(consoleMessage.msgid, consoleMessage);
+            }
+            currentSession.messages.push(consoleMessage);
+          }
           console.log(`[Console ${msg.type}]:`, msg.args);
         });
 
@@ -269,7 +278,16 @@ export const connectDevtoolsTool = defineTool({
             timestamp: new Date().toISOString(),
             source: 'miniprogram'
           };
-          context.consoleStorage.exceptionMessages.push(exceptionMessage);
+          // 使用新的 navigations 结构
+          const currentSession = context.consoleStorage.navigations[0];
+          if (currentSession) {
+            // 分配 msgid（如果有 idGenerator）
+            if (context.consoleStorage.idGenerator) {
+              exceptionMessage.msgid = context.consoleStorage.idGenerator();
+              context.consoleStorage.messageIdMap.set(exceptionMessage.msgid, exceptionMessage);
+            }
+            currentSession.exceptions.push(exceptionMessage);
+          }
           console.log(`[Exception]:`, err.message, err.stack);
         });
 
@@ -540,7 +558,16 @@ export const connectDevtoolsEnhancedTool = defineTool({
             timestamp: new Date().toISOString(),
             source: 'miniprogram'
           };
-          context.consoleStorage.consoleMessages.push(consoleMessage);
+          // 使用新的 navigations 结构
+          const currentSession = context.consoleStorage.navigations[0];
+          if (currentSession) {
+            // 分配 msgid（如果有 idGenerator）
+            if (context.consoleStorage.idGenerator) {
+              consoleMessage.msgid = context.consoleStorage.idGenerator();
+              context.consoleStorage.messageIdMap.set(consoleMessage.msgid, consoleMessage);
+            }
+            currentSession.messages.push(consoleMessage);
+          }
           console.log(`[Console ${msg.type}]:`, msg.args);
         });
 
@@ -551,7 +578,16 @@ export const connectDevtoolsEnhancedTool = defineTool({
             timestamp: new Date().toISOString(),
             source: 'miniprogram'
           };
-          context.consoleStorage.exceptionMessages.push(exceptionMessage);
+          // 使用新的 navigations 结构
+          const currentSession = context.consoleStorage.navigations[0];
+          if (currentSession) {
+            // 分配 msgid（如果有 idGenerator）
+            if (context.consoleStorage.idGenerator) {
+              exceptionMessage.msgid = context.consoleStorage.idGenerator();
+              context.consoleStorage.messageIdMap.set(exceptionMessage.msgid, exceptionMessage);
+            }
+            currentSession.exceptions.push(exceptionMessage);
+          }
           console.log(`[Exception]:`, err.message, err.stack);
         });
 

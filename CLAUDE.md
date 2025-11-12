@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-微信开发者工具自动化 MCP 服务器，提供31个工具用于微信小程序的自动化测试。基于 TypeScript 和 `miniprogram-automator` SDK 实现。
+微信开发者工具自动化 MCP 服务器，提供40个工具用于微信小程序的自动化测试。基于 TypeScript 和 `miniprogram-automator` SDK 实现。
 
 ## Common Commands
 
@@ -50,15 +50,15 @@ tests/
 **测试命令**：
 
 ```bash
-# 单元测试（协议 + 工具 + 工具类，155个测试）
+# 单元测试（协议 + 工具 + 工具类，224个测试）
 npm test
 
 # 分类运行单元测试
 npm run test:protocol      # 协议层测试（19个）
-npm run test:tools         # 工具逻辑测试（127个）
+npm run test:tools         # 工具逻辑测试（196个）
 
 # 集成测试（需要微信开发者工具 + playground/wx/）
-npm run test:integration   # 45个集成测试
+npm run test:integration   # 46个集成测试
 
 # 所有测试（单元 + 集成）
 npm run test:all
@@ -111,7 +111,7 @@ npm test -- tests/tools/console.test.ts -t "测试用例名称"
 - 特点：完全依赖模块化工具系统，代码简洁
 - 代码量：~245行
 - 用途：所有新项目和新配置
-- 工具处理：所有31个工具统一通过 `allTools` 数组和 `ToolDefinition` 框架处理
+- 工具处理：所有40个工具统一通过 `allTools` 数组和 `ToolDefinition` 框架处理
 
 **选择指南**：
 - `npm install -g weixin-devtools-mcp` 默认使用 `server.js`（package.json bin配置）
@@ -130,7 +130,7 @@ src/tools/
 │   ├── ToolHandler      # 工具处理器类型
 │   └── ToolResponse     # 响应构建接口
 │
-├── index.ts             # 统一导出 allTools[] (31个工具)
+├── index.ts             # 统一导出 allTools[] (40个工具)
 │
 └── [8个功能模块]
     ├── connection.ts    # 连接管理（3工具）
@@ -139,10 +139,10 @@ src/tools/
     ├── input.ts         # 交互操作（7工具）
     ├── assert.ts        # 断言验证（5工具）
     ├── navigate.ts      # 页面导航（6工具）
-    ├── console.ts       # Console监听（4工具）
+    ├── console.ts       # Console监听（6工具：含两阶段查询）
     ├── network.ts       # 网络监控（5工具）
     ├── screenshot.ts    # 截图工具（1工具）
-    └── diagnose.ts      # 诊断工具（3工具）
+    └── diagnose.ts      # 诊断工具（5工具）
 ```
 
 **工具定义模式**：
@@ -268,7 +268,7 @@ UID生成规则：优先使用 id > class > nth-child 构建稳定的CSS选择�
 - 直接调用工具 handler，无需启动 MCP 服务器
 - 使用 mock 对象模拟 miniProgram、page等依赖
 - 快速执行，专注于工具业务逻辑测试
-- **127个测试**，覆盖所有31个工具的核心逻辑
+- **196个测试**，覆盖所有40个工具的核心逻辑
 
 **3. 集成测试** (`tests/integration/`)
 - 测试真实环境下的端到端流程
@@ -278,7 +278,7 @@ UID生成规则：优先使用 id > class > nth-child 构建稳定的CSS选择�
 
 **测试覆盖率**：
 - 目标：>80% 代码覆盖率
-- 当前：155个单元测试 + 45个集成测试
+- 当前：224个单元测试 + 46个集成测试
 - 运行 `npm run test:coverage` 查看详细报告
 
 ### 重要实现细节
@@ -314,9 +314,9 @@ UID生成规则：优先使用 id > class > nth-child 构建稳定的CSS选择�
 | 交互操作 | 7 | click, input_text, select_picker, toggle_switch |
 | 断言验证 | 5 | assert_exists, assert_visible, assert_text |
 | 页面导航 | 6 | navigate_to, navigate_back, switch_tab, relaunch |
-| 调试工具 | 5 | screenshot, get_console, get_network_requests |
+| Console监控 | 6 | start/stop_console_monitoring, list_console_messages, get_console_message |
 | 网络监控 | 5 | 自动启动，get_network_requests（过滤查询） |
-| 诊断工具 | 3 | diagnose_connection, check_environment |
+| 诊断工具 | 5 | diagnose_connection, check_environment, diagnose_interceptor |
 
 ### 典型工作流
 
@@ -336,9 +336,22 @@ input_text({ uid: "input#username", text: "user" })
 assert_text({ uid: ".message", text: "成功" })
 assert_visible({ uid: ".modal", visible: true })
 
-// 5. 调试和监控
+// 5. Console 监控（两阶段查询优化）
+start_console_monitoring()  // 开始监听 console 消息
+
+// 第一阶段：列表查询（短格式，节省 token）
+const messages = list_console_messages({
+  types: ["error", "warn"],  // 过滤类型
+  pageSize: 20               // 限制数量
+})
+// 返回：[{ msgid: 1, type: "error", preview: "Error: ..." }, ...]
+
+// 第二阶段：获取详细信息（仅对感兴趣的消息）
+const detail = get_console_message({ msgid: 1 })
+// 返回完整信息：{ msgid, type, args: [...], timestamp, ... }
+
+// 6. 网络监控和截图
 screenshot({ path: "/tmp/result.png" })
-get_console() // 查看日志
 get_network_requests({ urlPattern: "/api/", successOnly: true })
 ```
 

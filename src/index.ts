@@ -73,10 +73,11 @@ const state = {
   currentPage: null as any,
   elementMap: new Map<string, ElementMapInfo>(), // uid -> ElementMapInfo 映射
   consoleStorage: {
-    consoleMessages: [],
-    exceptionMessages: [],
+    navigations: [{ messages: [], exceptions: [], timestamp: new Date().toISOString() }],
+    messageIdMap: new Map(),
     isMonitoring: false,
-    startTime: null
+    startTime: null,
+    maxNavigations: 3
   } as ConsoleStorage, // Console存储
   networkStorage: {
     requests: [],

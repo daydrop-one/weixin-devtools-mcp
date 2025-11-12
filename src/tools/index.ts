@@ -37,6 +37,8 @@ import {
 import {
   startConsoleMonitoringTool,
   stopConsoleMonitoringTool,
+  listConsoleMessagesTool,
+  getConsoleMessageTool,
   getConsoleTool,
   clearConsoleTool
 } from './console.js';
@@ -99,6 +101,8 @@ export const allTools: ToolDefinition[] = [
   evaluateScript,
   startConsoleMonitoringTool,
   stopConsoleMonitoringTool,
+  listConsoleMessagesTool,
+  getConsoleMessageTool,
   getConsoleTool,
   clearConsoleTool,
 

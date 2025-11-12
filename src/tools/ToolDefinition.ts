@@ -25,19 +25,44 @@ export interface ToolAnnotations {
 }
 
 /**
- * Console日志类型
+ * Console日志类型（扩展到15+种类型）
+ */
+export type ConsoleMessageType =
+  | 'log'
+  | 'debug'
+  | 'info'
+  | 'error'
+  | 'warn'
+  | 'dir'
+  | 'dirxml'
+  | 'table'
+  | 'trace'
+  | 'clear'
+  | 'group'
+  | 'groupCollapsed'
+  | 'groupEnd'
+  | 'assert'
+  | 'count'
+  | 'timeEnd'
+  | 'verbose';
+
+/**
+ * Console消息接口（带 Stable ID）
  */
 export interface ConsoleMessage {
-  type: 'log' | 'warn' | 'error' | 'info' | 'debug';
+  msgid?: number;  // Stable ID，用于两阶段查询
+  type: ConsoleMessageType;
+  message?: string;  // 格式化的消息文本
   args: any[];
   timestamp: string;
   source?: string;
 }
 
 /**
- * Exception异常信息
+ * Exception异常信息（带 Stable ID）
  */
 export interface ExceptionMessage {
+  msgid?: number;  // Stable ID，用于两阶段查询
   message: string;
   stack?: string;
   timestamp: string;
@@ -45,13 +70,33 @@ export interface ExceptionMessage {
 }
 
 /**
- * Console数据存储
+ * 导航会话数据
+ */
+export interface NavigationSession {
+  messages: ConsoleMessage[];
+  exceptions: ExceptionMessage[];
+  timestamp: string;
+}
+
+/**
+ * Console数据存储（支持导航历史）
  */
 export interface ConsoleStorage {
-  consoleMessages: ConsoleMessage[];
-  exceptionMessages: ExceptionMessage[];
+  // 按导航分组存储（最新的在前）
+  navigations: NavigationSession[];
+
+  // ID 映射表（用于快速查找）
+  messageIdMap: Map<number, ConsoleMessage | ExceptionMessage>;
+
+  // 监听状态
   isMonitoring: boolean;
   startTime: string | null;
+
+  // 配置
+  maxNavigations: number;  // 最多保留的导航会话数，默认3
+
+  // ID 生成器
+  idGenerator?: () => number;
 }
 
 /**
