@@ -10,7 +10,14 @@
       "Bash(then)",
       "Bash(fi)",
       "Bash(xargs:*)",
-      "Bash(sort git diff --name-only)"
+      "Bash(sort git diff --name-only)",
+      "mcp__graphiti__search_memory_facts",
+      "mcp__graphiti__get_episodes",
+      "mcp__graphiti__search_nodes",
+      "Bash(yarn --version:*)",
+      "Bash(yarn set:*)",
+      "mcp__graphiti__add_memory",
+      "Bash(git add:*)"
     ]
   }
 }

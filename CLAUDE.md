@@ -11,13 +11,13 @@ WeChat DevTools Automation MCP Server, providing 40 tools for WeChat Mini Progra
 ### Development and Build
 ```bash
 # Build project (TypeScript → JavaScript + set executable permissions)
-npm run build
+yarn build
 
 # Development mode (watch file changes and auto-rebuild)
-npm run watch
+yarn watch
 
 # Debug with MCP Inspector
-npm run inspector
+yarn inspector
 ```
 
 ### Testing
@@ -51,24 +51,24 @@ tests/
 
 ```bash
 # Unit tests (protocol + tools + utilities, 224 tests)
-npm test
+yarn test
 
 # Run unit tests by category
-npm run test:protocol      # Protocol layer tests (19 tests)
-npm run test:tools         # Tool logic tests (196 tests)
+yarn test:protocol      # Protocol layer tests (19 tests)
+yarn test:tools         # Tool logic tests (196 tests)
 
 # Integration tests (requires WeChat DevTools + playground/wx/)
-npm run test:integration   # 46 integration tests
+yarn test:integration   # 46 integration tests
 
 # All tests (unit + integration)
-npm run test:all
+yarn test:all
 
 # Test coverage
-npm run test:coverage
+yarn test:coverage
 
 # Watch mode
-npm run test:watch                # Unit tests watch
-npm run test:integration:watch    # Integration tests watch
+yarn test:watch                # Unit tests watch
+yarn test:integration:watch    # Integration tests watch
 ```
 
 **Integration Test Requirements**:
@@ -81,16 +81,16 @@ npm run test:integration:watch    # Integration tests watch
 
 ```bash
 # Protocol tests
-npx vitest tests/protocol/server.test.ts
+yarn vitest tests/protocol/server.test.ts
 
 # Tool tests
-npx vitest tests/tools/console.test.ts
+yarn vitest tests/tools/console.test.ts
 
 # Integration tests
-RUN_INTEGRATION_TESTS=true npx vitest tests/integration/console.integration.test.ts
+RUN_INTEGRATION_TESTS=true yarn vitest tests/integration/console.integration.test.ts
 
 # Specify test case
-npm test -- tests/tools/console.test.ts -t "test case name"
+yarn test -- tests/tools/console.test.ts -t "test case name"
 ```
 
 ## Architecture
@@ -279,7 +279,7 @@ The project uses a three-layer testing architecture (inspired by chrome-devtools
 **Test Coverage**:
 - Target: >80% code coverage
 - Current: 224 unit tests + 46 integration tests
-- Run `npm run test:coverage` to view detailed report
+- Run `yarn test:coverage` to view detailed report
 
 ### Important Implementation Details
 

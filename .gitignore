@@ -3,3 +3,12 @@ build/
 *.log
 .env*
 .idea
+
+# No Zero-Installs
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions

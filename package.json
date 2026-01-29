@@ -25,17 +25,15 @@
     "url": "https://github.com/wooter-s/weixin-devtools-mcp/issues"
   },
   "homepage": "https://github.com/wooter-s/weixin-devtools-mcp#readme",
-  "bin": {
-    "weixin-devtools-mcp": "build/server.js"
-  },
+  "bin": "build/server.js",
   "files": [
     "build"
   ],
   "scripts": {
     "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755'); require('fs').chmodSync('build/server.js', '755')\"",
-    "prepare": "npm run build",
+    "prepare": "yarn build",
     "watch": "tsc --watch",
-    "inspector": "npx @modelcontextprotocol/inspector build/index.js",
+    "inspector": "yarn @modelcontextprotocol/inspector build/index.js",
     "test": "vitest --run tests/protocol/ tests/tools/ tests/utils/",
     "test:watch": "vitest tests/protocol/ tests/tools/ tests/utils/",
     "test:coverage": "vitest --coverage tests/protocol/ tests/tools/ tests/utils/",
@@ -43,7 +41,7 @@
     "test:tools": "vitest --run tests/tools/",
     "test:integration": "RUN_INTEGRATION_TESTS=true vitest --run tests/integration/",
     "test:integration:watch": "RUN_INTEGRATION_TESTS=true vitest tests/integration/",
-    "test:all": "npm test && npm run test:integration"
+    "test:all": "yarn test && yarn test:integration"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "0.6.0",
@@ -56,5 +54,6 @@
     "@vitest/coverage-v8": "^1.6.0",
     "typescript": "^5.3.3",
     "vitest": "^1.6.0"
-  }
+  },
+  "packageManager": "yarn@4.12.0"
 }
