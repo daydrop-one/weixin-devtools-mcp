@@ -1,11 +1,11 @@
 /**
- * assert.ts 工具测试
- * 测试断言验证工具的各种场景
+ * assert.ts Tool Tests
+ * Test various scenarios of assertion verification tools
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-// Mock tools.js 中的断言函数
+// Mock assertion functions in tools.js
 vi.mock('../../src/tools.js', () => ({
   assertElementExists: vi.fn(),
   assertElementVisible: vi.fn(),
@@ -13,7 +13,7 @@ vi.mock('../../src/tools.js', () => ({
   assertElementAttribute: vi.fn()
 }))
 
-// 导入被测试的工具
+// Import tools being tested
 import {
   assertExistsTool,
   assertVisibleTool,
@@ -22,7 +22,7 @@ import {
   assertStateTool
 } from '../../src/tools/assert.js'
 
-// 导入mock的函数用于验证
+// Import mock functions for verification
 import {
   assertElementExists,
   assertElementVisible,
@@ -30,8 +30,8 @@ import {
   assertElementAttribute
 } from '../../src/tools.js'
 
-describe('assert.ts 工具测试', () => {
-  // 创建测试用的上下文对象
+describe('assert.ts Tool Tests', () => {
+  // Create mock context object for testing
   const mockContext = {
     currentPage: {
       path: '/pages/test/test'
@@ -43,7 +43,7 @@ describe('assert.ts 工具测试', () => {
     miniProgram: {}
   } as any
 
-  // 创建测试用的请求和响应对象
+  // Create mock request and response objects for testing
   const createMockRequest = (params: any) => ({ params })
   const createMockResponse = () => {
     const lines: string[] = []
@@ -54,21 +54,21 @@ describe('assert.ts 工具测试', () => {
     }
   }
 
-  // 成功的断言结果
+  // Successful assertion result
   const successResult = {
     passed: true,
-    message: '断言通过',
-    expected: '元素存在',
-    actual: '元素存在',
+    message: 'Assertion passed',
+    expected: 'Element exists',
+    actual: 'Element exists',
     timestamp: Date.now()
   }
 
-  // 失败的断言结果
+  // Failed assertion result
   const failureResult = {
     passed: false,
-    message: '断言失败',
-    expected: '元素存在',
-    actual: '元素不存在',
+    message: 'Assertion failed',
+    expected: 'Element exists',
+    actual: 'Element does not exist',
     timestamp: Date.now()
   }
 

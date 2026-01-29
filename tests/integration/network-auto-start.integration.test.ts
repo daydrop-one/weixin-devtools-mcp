@@ -1,6 +1,6 @@
 /**
- * 网络监听自动启动功能集成测试
- * 验证连接时网络监听是否自动启动并正确捕获请求
+ * Network Monitoring Auto-Start Feature Integration Tests
+ * Verify network monitoring auto-starts on connection and correctly captures requests
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -13,10 +13,10 @@ import {
   withTimeout
 } from '../utils/test-utils.js';
 
-// 只在环境变量RUN_INTEGRATION_TESTS为true时运行
+// Only run when environment variable RUN_INTEGRATION_TESTS is true
 const shouldRun = process.env.RUN_INTEGRATION_TESTS === 'true';
 
-// 测试配置
+// Test configuration
 const TEST_PROJECT_PATH = '/Users/didi/workspace/wooPro/weixin-devtools-mcp/playground/wx';
 const TEST_CLI_PATH = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli';
 

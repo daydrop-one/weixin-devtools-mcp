@@ -1,6 +1,6 @@
 /**
- * 微信开发者工具 MCP 工具函数
- * 提供可测试的纯函数实现
+ * WeChat DevTools MCP Tool Functions
+ * Provides testable pure function implementations
  */
 
 import automator from "miniprogram-automator";
@@ -11,7 +11,7 @@ import { promisify } from "util";
 const sleep = promisify(setTimeout);
 
 /**
- * 连接选项接口
+ * Connection options interface
  */
 export interface ConnectOptions {
   projectPath: string;
@@ -21,20 +21,20 @@ export interface ConnectOptions {
 }
 
 /**
- * 增强的连接选项接口
+ * Enhanced connection options interface
  */
 export interface EnhancedConnectOptions extends ConnectOptions {
   mode?: 'auto' | 'launch' | 'connect';
-  autoPort?: number;           // CLI --auto-port 参数
-  autoAccount?: string;        // CLI --auto-account 参数
-  timeout?: number;            // 连接超时时间
-  fallbackMode?: boolean;      // 允许回退到其他模式
-  healthCheck?: boolean;       // 执行连接后健康检查
-  verbose?: boolean;          // 详细日志输出
+  autoPort?: number;           // CLI --auto-port parameter
+  autoAccount?: string;        // CLI --auto-account parameter
+  timeout?: number;            // Connection timeout
+  fallbackMode?: boolean;      // Allow fallback to other modes
+  healthCheck?: boolean;       // Perform health check after connection
+  verbose?: boolean;          // Verbose logging output
 }
 
 /**
- * 启动结果接口
+ * Startup result interface
  */
 export interface StartupResult {
   processInfo: {
@@ -45,7 +45,7 @@ export interface StartupResult {
 }
 
 /**
- * 详细连接结果接口
+ * Detailed connection result interface
  */
 export interface DetailedConnectResult extends ConnectResult {
   connectionMode: 'launch' | 'connect';
@@ -58,7 +58,7 @@ export interface DetailedConnectResult extends ConnectResult {
 }
 
 /**
- * 开发者工具连接错误类
+ * DevTools connection error class
  */
 export class DevToolsConnectionError extends Error {
   constructor(
@@ -73,7 +73,7 @@ export class DevToolsConnectionError extends Error {
 }
 
 /**
- * 连接结果接口
+ * Connection result interface
  */
 export interface ConnectResult {
   miniProgram: any;
@@ -82,7 +82,7 @@ export interface ConnectResult {
 }
 
 /**
- * automator.launch 选项接口
+ * automator.launch options interface
  */
 interface AutomatorLaunchOptions {
   projectPath: string;
@@ -96,37 +96,37 @@ interface AutomatorLaunchOptions {
 }
 
 /**
- * 连接到微信开发者工具
+ * Connect to WeChat DevTools
  *
- * @param options 连接选项
- * @returns 连接结果
- * @throws 连接失败时抛出错误
+ * @param options Connection options
+ * @returns Connection result
+ * @throws Throws error on connection failure
  */
 export async function connectDevtools(options: ConnectOptions): Promise<ConnectResult> {
   const { projectPath, cliPath, port, autoAudits } = options;
 
   if (!projectPath) {
-    throw new Error("项目路径是必需的");
+    throw new Error("Project path is required");
   }
 
   try {
-    // 处理@playground/wx格式的路径，转换为绝对文件系统路径
+    // Handle @playground/wx format path, convert to absolute filesystem path
     let resolvedProjectPath = projectPath;
     if (projectPath.startsWith('@playground/')) {
-      // 转换为相对路径，然后解析为绝对路径
+      // Convert to relative path, then resolve to absolute path
       const relativePath = projectPath.replace('@playground/', 'playground/');
       resolvedProjectPath = path.resolve(process.cwd(), relativePath);
     } else if (!path.isAbsolute(projectPath)) {
-      // 如果不是绝对路径，转换为绝对路径
+      // If not absolute path, convert to absolute path
       resolvedProjectPath = path.resolve(process.cwd(), projectPath);
     }
 
-    // 验证项目路径是否存在
+    // Validate project path exists
     if (!fs.existsSync(resolvedProjectPath)) {
       throw new Error(`Project path '${resolvedProjectPath}' doesn't exist`);
     }
 
-    // 构建 automator.launch 的选项
+    // Build automator.launch options
     const launchOptions: AutomatorLaunchOptions = { projectPath: resolvedProjectPath };
     if (cliPath) launchOptions.cliPath = cliPath;
     if (port) launchOptions.port = port;
@@ -140,19 +140,19 @@ export async function connectDevtools(options: ConnectOptions): Promise<ConnectR
       };
     }
 
-    // 启动并连接微信开发者工具
+    // Launch and connect to WeChat DevTools
     const miniProgram = await automator.launch(launchOptions);
 
-    // 获取当前页面
+    // Get current page
     const currentPage = await miniProgram.currentPage();
     if (!currentPage) {
-      throw new Error("无法获取当前页面");
+      throw new Error("Unable to get current page");
     }
     const pagePath = await currentPage.path;
 
-    // 自动启动网络监听
+    // Auto-start network monitoring
     try {
-      // 创建请求拦截器（直接内联函数）
+      // Create request interceptor (inline function)
       await miniProgram.mockWxMethod('request', function(this: any, options: any) {
         // @ts-ignore - wx is available in WeChat miniprogram environment
         const wxObj = (typeof wx !== 'undefined' ? wx : null) as any;
@@ -200,7 +200,7 @@ export async function connectDevtools(options: ConnectOptions): Promise<ConnectR
         return this.origin(options);
       });
 
-      // 拦截 uploadFile
+      // Intercept uploadFile
       await miniProgram.mockWxMethod('uploadFile', function(this: any, options: any) {
         // @ts-ignore
         const wxObj = (typeof wx !== 'undefined' ? wx : null) as any;
@@ -241,7 +241,7 @@ export async function connectDevtools(options: ConnectOptions): Promise<ConnectR
         return this.origin(options);
       });
 
-      // 拦截 downloadFile
+      // Intercept downloadFile
       await miniProgram.mockWxMethod('downloadFile', function(this: any, options: any) {
         // @ts-ignore
         const wxObj = (typeof wx !== 'undefined' ? wx : null) as any;
@@ -282,7 +282,7 @@ export async function connectDevtools(options: ConnectOptions): Promise<ConnectR
         return this.origin(options);
       });
 
-      // 拦截 Mpx 框架的 $xfetch（与 wx.request 同步注入，提高首批请求捕获率）
+      // Intercept Mpx framework $xfetch (sync injection with wx.request to improve first request capture rate)
       await miniProgram.evaluate(function() {
         // @ts-ignore - wx is available in WeChat miniprogram environment
         if (typeof wx === 'undefined') return;
@@ -290,7 +290,7 @@ export async function connectDevtools(options: ConnectOptions): Promise<ConnectR
         // @ts-ignore
         wx.__networkLogs = wx.__networkLogs || [];
 
-        // 检测 Mpx 框架
+        // Detect Mpx framework
         // @ts-ignore - getApp is available in WeChat miniprogram environment
         const app = typeof getApp !== 'undefined' ? getApp() : null;
         const hasMpxFetch = app &&
@@ -298,8 +298,8 @@ export async function connectDevtools(options: ConnectOptions): Promise<ConnectR
                             app.$xfetch.interceptors &&
                             typeof app.$xfetch.interceptors.request.use === 'function';
 
-        // 调试日志
-        // @ts-ignore - 在运行时环境中输出调试信息
+        // Debug logging
+        // @ts-ignore - Output debug info in runtime environment
         const debugInfo = {
           // @ts-ignore
           hasGetApp: typeof getApp !== 'undefined',
@@ -308,15 +308,15 @@ export async function connectDevtools(options: ConnectOptions): Promise<ConnectR
           hasInterceptors: !!(app && app.$xfetch && app.$xfetch.interceptors),
           hasMpxFetch: hasMpxFetch
         };
-        console.log('[MCP-DEBUG] Mpx检测:', debugInfo);
+        console.log('[MCP-DEBUG] Mpx detection:', debugInfo);
 
-        // 强制安装 Mpx 拦截器（不检查标志，每次都重新安装以覆盖旧的）
-        // 这样可以解决小程序未重新加载导致标志残留的问题
+        // Force install Mpx interceptor (no flag check, reinstall each time to override old ones)
+        // This resolves issues with residual flags when miniprogram is not reloaded
         // @ts-ignore
         if (hasMpxFetch) {
-          console.log('[MCP] 正在安装 Mpx $xfetch 拦截器（强制覆盖）...');
+          console.log('[MCP] Installing Mpx $xfetch interceptor (force override)...');
 
-          // 安装 Mpx 请求拦截器
+          // Install Mpx request interceptor
           // @ts-ignore
           app.$xfetch.interceptors.request.use(function(config: any) {
             const requestId = 'mpx_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
@@ -342,7 +342,7 @@ export async function connectDevtools(options: ConnectOptions): Promise<ConnectR
             return config;
           });
 
-          // 安装 Mpx 响应拦截器
+          // Install Mpx response interceptor
           // @ts-ignore
           app.$xfetch.interceptors.response.use(
             function onSuccess(response: any) {
@@ -386,16 +386,16 @@ export async function connectDevtools(options: ConnectOptions): Promise<ConnectR
             }
           );
 
-          console.log('[MCP] Mpx $xfetch 拦截器安装完成');
+          console.log('[MCP] Mpx $xfetch interceptor installation completed');
         }
 
         // @ts-ignore
         wx.__networkInterceptorsInstalled = true;
       });
 
-      console.log('[connectDevtools] 网络监听已自动启动（包含 Mpx 框架支持）');
+      console.log('[connectDevtools] Network monitoring auto-started (Mpx framework support included)');
     } catch (err) {
-      console.warn('[connectDevtools] 网络监听启动失败:', err);
+      console.warn('[connectDevtools] Network monitoring startup failed:', err);
     }
 
     return {
@@ -405,16 +405,16 @@ export async function connectDevtools(options: ConnectOptions): Promise<ConnectR
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`连接微信开发者工具失败: ${errorMessage}`);
+    throw new Error(`Failed to connect to WeChat DevTools: ${errorMessage}`);
   }
 }
 
 /**
- * 智能连接到微信开发者工具（优化版）
- * 支持多种连接模式和智能回退
+ * Smart connection to WeChat DevTools (optimized version)
+ * Supports multiple connection modes and intelligent fallback
  *
- * @param options 增强的连接选项
- * @returns 详细连接结果
+ * @param options Enhanced connection options
+ * @returns Detailed connection result
  */
 export async function connectDevtoolsEnhanced(
   options: EnhancedConnectOptions
@@ -428,12 +428,12 @@ export async function connectDevtoolsEnhanced(
 
   const startTime = Date.now();
 
-  // 验证项目路径（在所有模式执行前统一验证）
+  // Validate project path (unified validation before all modes)
   if (!options.projectPath) {
-    throw new Error("项目路径是必需的");
+    throw new Error("Project path is required");
   }
 
-  // 解析并验证项目路径
+  // Resolve and validate project path
   let resolvedProjectPath = options.projectPath;
   if (options.projectPath.startsWith('@playground/')) {
     const relativePath = options.projectPath.replace('@playground/', 'playground/');
@@ -447,8 +447,8 @@ export async function connectDevtoolsEnhanced(
   }
 
   if (verbose) {
-    console.log(`开始连接微信开发者工具，模式: ${mode}`);
-    console.log(`项目路径: ${resolvedProjectPath}`);
+    console.log(`Starting connection to WeChat DevTools, mode: ${mode}`);
+    console.log(`Project path: ${resolvedProjectPath}`);
   }
 
   try {
@@ -460,18 +460,18 @@ export async function connectDevtoolsEnhanced(
       case 'launch':
         return await launchMode(options, startTime);
       default:
-        throw new Error(`不支持的连接模式: ${mode}`);
+        throw new Error(`Unsupported connection mode: ${mode}`);
     }
   } catch (error) {
     if (verbose) {
-      console.error(`连接失败:`, error);
+      console.error(`Connection failed:`, error);
     }
     throw error;
   }
 }
 
 /**
- * 判断错误是否为可通过 connectMode 解决的会话冲突错误
+ * Determine if error is a session conflict error resolvable via connectMode
  */
 function isSessionConflictError(error: any): boolean {
   if (error instanceof DevToolsConnectionError) {
@@ -485,69 +485,69 @@ function isSessionConflictError(error: any): boolean {
 }
 
 /**
- * 智能连接逻辑（优化版）
+ * Intelligent connection logic (optimized version)
  *
- * 策略说明：
- * 1. 默认使用 launchMode（依赖 automator.launch 的智能处理）
- *    - automator.launch 会自动检测IDE状态和项目匹配
- *    - 自动复用现有会话或打开新项目
- * 2. 仅在会话冲突等特定错误时回退到 connectMode
- * 3. 移除了复杂的端口检测和项目验证逻辑（交给官方库处理）
+ * Strategy description:
+ * 1. Use launchMode by default (relies on automator.launch intelligent handling)
+ *    - automator.launch auto-detects IDE status and project matching
+ *    - Auto-reuses existing sessions or opens new projects
+ * 2. Only fallback to connectMode on specific errors like session conflicts
+ * 3. Removed complex port detection and project validation logic (delegated to official library)
  */
 async function intelligentConnect(
   options: EnhancedConnectOptions,
   startTime: number
 ): Promise<DetailedConnectResult> {
   if (options.verbose) {
-    console.log('🎯 智能连接策略: 优先使用 launchMode（自动处理项目验证和会话复用）');
+    console.log('🎯 Intelligent connection strategy: prefer launchMode (auto-handle project validation and session reuse)');
   }
 
   try {
-    // 默认使用 launchMode
-    // automator.launch() 会自动：
-    // 1. 检测IDE是否运行
-    // 2. 验证项目路径是否匹配
-    // 3. 复用现有会话或打开新项目
+    // Use launchMode by default
+    // automator.launch() auto-handles:
+    // 1. Detect if IDE is running
+    // 2. Verify project path matches
+    // 3. Reuse existing session or open new project
     return await launchMode(options, startTime);
   } catch (error) {
     if (options.verbose) {
-      console.log('⚠️ launchMode 失败，分析错误类型...');
+      console.log('⚠️ launchMode failed, analyzing error type...');
     }
 
-    // 仅在特定可恢复错误时回退到 connectMode
+    // Only fallback to connectMode on specific recoverable errors
     if (options.fallbackMode && isSessionConflictError(error)) {
       if (options.verbose) {
-        console.log('🔄 检测到会话冲突，尝试回退到 connectMode');
+        console.log('🔄 Detected session conflict, attempting fallback to connectMode');
       }
       return await connectMode(options, startTime);
     }
 
-    // 其他错误直接抛出
+    // Other errors throw directly
     throw error;
   }
 }
 
 /**
- * Connect模式：两阶段连接
+ * Connect mode: two-phase connection
  */
 async function connectMode(
   options: EnhancedConnectOptions,
   startTime: number
 ): Promise<DetailedConnectResult> {
   try {
-    // 阶段1: CLI启动
+    // Phase 1: CLI startup
     const startupResult = await executeWithDetailedError(
       () => startupPhase(options),
       'startup'
     );
 
-    // 阶段2: WebSocket连接
+    // Phase 2: WebSocket connection
     const connectionResult = await executeWithDetailedError(
       () => connectionPhase(options, startupResult),
       'connection'
     );
 
-    // 健康检查
+    // Health check
     let healthStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
     if (options.healthCheck) {
       healthStatus = await executeWithDetailedError(
@@ -564,28 +564,28 @@ async function connectMode(
       processInfo: startupResult.processInfo
     };
   } catch (error) {
-    // 检查是否是会话冲突错误
+    // Check if session conflict error
     if (error instanceof DevToolsConnectionError &&
         error.phase === 'startup' &&
         error.details?.reason === 'session_conflict') {
 
       if (options.verbose) {
-        console.log('🔄 检测到会话冲突，自动回退到传统连接模式（launch）...');
+        console.log('🔄 Detected session conflict, auto-fallback to traditional connection mode (launch)...');
       }
 
-      // 如果允许回退，自动使用launch模式
+      // If fallback allowed, auto-use launch mode
       if (options.fallbackMode) {
         return await launchMode(options, startTime);
       }
     }
 
-    // 其他错误直接抛出
+    // Other errors throw directly
     throw error;
   }
 }
 
 /**
- * Launch模式：传统连接方式
+ * Launch mode: traditional connection method
  */
 async function launchMode(
   options: EnhancedConnectOptions,
@@ -600,7 +600,7 @@ async function launchMode(
 
   const result = await connectDevtools(connectOptions);
 
-  // 健康检查
+  // Health check
   let healthStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
   if (options.healthCheck) {
     healthStatus = await executeWithDetailedError(
@@ -618,20 +618,20 @@ async function launchMode(
 }
 
 /**
- * 启动阶段：使用CLI命令启动自动化
+ * Startup phase: start automation using CLI command
  */
 async function startupPhase(options: EnhancedConnectOptions): Promise<StartupResult> {
   const port = options.autoPort || 9420;
   const cliCommand = buildCliCommand(options);
 
   if (options.verbose) {
-    console.log('执行CLI命令:', cliCommand.join(' '));
+    console.log('Executing CLI command:', cliCommand.join(' '));
   }
 
-  // 执行CLI命令
+  // Execute CLI command
   const process = await executeCliCommand(cliCommand);
 
-  // 等待WebSocket服务就绪
+  // Wait for WebSocket service to be ready
   await waitForWebSocketReady(port, options.timeout || 45000, options.verbose);
 
   return {
@@ -644,7 +644,7 @@ async function startupPhase(options: EnhancedConnectOptions): Promise<StartupRes
 }
 
 /**
- * 连接阶段：连接到WebSocket
+ * Connection phase: connect to WebSocket
  */
 async function connectionPhase(
   options: EnhancedConnectOptions,
@@ -653,16 +653,16 @@ async function connectionPhase(
   const wsEndpoint = `ws://localhost:${startupResult.processInfo.port}`;
 
   if (options.verbose) {
-    console.log('连接WebSocket端点:', wsEndpoint);
+    console.log('Connecting to WebSocket endpoint:', wsEndpoint);
   }
 
-  // 连接到WebSocket端点
+  // Connect to WebSocket endpoint
   const miniProgram = await connectWithRetry(wsEndpoint, 3);
 
-  // 获取当前页面
+  // Get current page
   const currentPage = await miniProgram.currentPage();
   if (!currentPage) {
-    throw new Error('无法获取当前页面');
+    throw new Error('Unable to get current page');
   }
 
   const pagePath = await currentPage.path;
@@ -675,7 +675,7 @@ async function connectionPhase(
 }
 
 /**
- * 构建CLI命令
+ * Build CLI command
  */
 function buildCliCommand(options: EnhancedConnectOptions): string[] {
   const cliPath = options.cliPath || findDefaultCliPath();
@@ -683,16 +683,16 @@ function buildCliCommand(options: EnhancedConnectOptions): string[] {
 
   const args = ['auto', '--project', resolvedProjectPath];
 
-  // 使用正确的端口参数名（应该是 --auto-port 而不是 --port）
+  // Use correct port parameter name (should be --auto-port not --port)
   if (options.autoPort) {
     args.push('--auto-port', options.autoPort.toString());
   }
 
-  // 移除不存在的--auto-account参数
-  // autoAccount参数在官方CLI帮助中没有显示，可能已弃用
+  // Remove unsupported --auto-account parameter
+  // autoAccount parameter not shown in official CLI help, likely deprecated
   if (options.autoAccount) {
-    // 保留接口兼容性但不传递给CLI
-    console.warn('autoAccount参数可能不受支持，已忽略');
+    // Keep interface compatibility but don't pass to CLI
+    console.warn('autoAccount parameter may not be supported, ignored');
   }
 
   if (options.verbose) {
@@ -703,7 +703,7 @@ function buildCliCommand(options: EnhancedConnectOptions): string[] {
 }
 
 /**
- * 查找默认CLI路径
+ * Find default CLI path
  */
 function findDefaultCliPath(): string {
   const platform = process.platform;
@@ -711,14 +711,14 @@ function findDefaultCliPath(): string {
   if (platform === 'darwin') {
     return '/Applications/wechatwebdevtools.app/Contents/MacOS/cli';
   } else if (platform === 'win32') {
-    return 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat';
+    return 'C:/Program Files (x86)/Tencent/WeChat Web Developer Tools/cli.bat';
   } else {
-    throw new Error(`不支持的平台: ${platform}`);
+    throw new Error(`Unsupported platform: ${platform}`);
   }
 }
 
 /**
- * 解析项目路径
+ * Resolve project path
  */
 function resolveProjectPath(projectPath: string): string {
   if (projectPath.startsWith('@playground/')) {
@@ -731,7 +731,7 @@ function resolveProjectPath(projectPath: string): string {
 }
 
 /**
- * 执行CLI命令
+ * Execute CLI command
  */
 async function executeCliCommand(command: string[]): Promise<ChildProcess> {
   const [cliPath, ...args] = command;
@@ -759,7 +759,7 @@ async function executeCliCommand(command: string[]): Promise<ChildProcess> {
         errorOutput += text;
         console.log('[CLI stderr]:', text.trim());
 
-        // 检测端口冲突错误
+        // Detect port conflict error
         if (text.includes('must be restarted on port')) {
           const match = text.match(/started on .+:(\d+) and must be restarted on port (\d+)/);
           if (match) {
@@ -768,47 +768,47 @@ async function executeCliCommand(command: string[]): Promise<ChildProcess> {
               resolved = true;
               process.kill();
               reject(new Error(
-                `端口冲突: IDE已在端口 ${currentPort} 上运行，但请求的端口是 ${requestedPort}。\n` +
-                `解决方案：\n` +
-                `1. 使用当前端口：autoPort: ${currentPort}\n` +
-                `2. 关闭微信开发者工具后重新连接`
+                `Port conflict: IDE already running on port ${currentPort}, but requested port is ${requestedPort}.\n` +
+                `Solutions:\n` +
+                `1. Use current port: autoPort: ${currentPort}\n` +
+                `2. Close WeChat DevTools and reconnect`
               ));
             }
           }
         }
 
-        // 检测自动化会话冲突错误
+        // Detect automation session conflict error
         if ((text.includes('automation') || text.includes('自动化')) &&
             (text.includes('already') || text.includes('exists') || text.includes('已存在'))) {
           if (!resolved) {
             resolved = true;
             process.kill();
 
-            // 创建特殊的会话冲突错误，允许上层处理回退
+            // Create special session conflict error, allow upper layer to handle fallback
             const sessionConflictError = new DevToolsConnectionError(
-              `自动化会话冲突: 微信开发者工具已有活跃的自动化会话`,
+              `Automation session conflict: WeChat DevTools already has active automation session`,
               'startup',
               undefined,
               {
                 reason: 'session_conflict',
                 suggestFallback: true,
-                details: `可能原因：\n` +
-                  `1. 之前使用了 connect_devtools (传统模式) 并已建立连接\n` +
-                  `2. 其他程序正在使用自动化功能\n` +
-                  `解决方案：\n` +
-                  `1. 使用已建立的连接（工具会自动检测并复用）\n` +
-                  `2. 关闭微信开发者工具并重新打开\n` +
-                  `3. 使用 connect_devtools 继续传统模式`
+                details: `Possible reasons:\n` +
+                  `1. Previously used connect_devtools (traditional mode) with established connection\n` +
+                  `2. Other programs using automation features\n` +
+                  `Solutions:\n` +
+                  `1. Use established connection (tool auto-detects and reuses)\n` +
+                  `2. Close WeChat DevTools and reopen\n` +
+                  `3. Use connect_devtools to continue in traditional mode`
               }
             );
             reject(sessionConflictError);
           }
         }
 
-        // 检测 CLI 命令失败（通用）
+        // Detect CLI command failure (generic)
         if (text.includes('error') || text.includes('failed') || text.includes('失败')) {
-          if (!resolved && text.length > 10) { // 确保不是误报
-            console.log('[CLI 警告] 检测到潜在错误:', text.trim());
+          if (!resolved && text.length > 10) { // Ensure not false positive
+            console.log('[CLI warning] Detected potential error:', text.trim());
           }
         }
       });
@@ -817,85 +817,85 @@ async function executeCliCommand(command: string[]): Promise<ChildProcess> {
     process.on('error', (error) => {
       if (!resolved) {
         resolved = true;
-        reject(new Error(`CLI命令执行失败: ${error.message}`));
+        reject(new Error(`CLI command execution failed: ${error.message}`));
       }
     });
 
     process.on('exit', (code, signal) => {
       if (!resolved && code !== 0 && code !== null) {
         resolved = true;
-        const errorMsg = errorOutput || `CLI进程异常退出 (code=${code}, signal=${signal})`;
+        const errorMsg = errorOutput || `CLI process exited abnormally (code=${code}, signal=${signal})`;
         reject(new Error(errorMsg));
       }
     });
 
     process.on('spawn', () => {
-      // CLI命令已启动，返回进程对象
+      // CLI command started, return process object
       if (!resolved) {
         resolved = true;
         resolve(process);
       }
     });
 
-    // 设置超时
+    // Set timeout
     setTimeout(() => {
       if (!resolved && !process.killed) {
         resolved = true;
         process.kill();
-        reject(new Error('CLI命令启动超时'));
+        reject(new Error('CLI command startup timeout'));
       }
     }, 10000);
   });
 }
 
 /**
- * 等待WebSocket服务就绪
- * @public 导出供测试使用
+ * Wait for WebSocket service to be ready
+ * @public Exported for test use
  */
 export async function waitForWebSocketReady(port: number, timeout: number, verbose: boolean = false): Promise<void> {
   const startTime = Date.now();
   let attempt = 0;
-  const maxAttempts = Math.ceil(timeout / 1000); // 每秒检查一次
+  const maxAttempts = Math.ceil(timeout / 1000); // Check once per second
 
   if (verbose) {
-    console.log(`等待WebSocket服务启动，端口: ${port}，超时: ${timeout}ms`);
+    console.log(`Waiting for WebSocket service startup, port: ${port}, timeout: ${timeout}ms`);
   }
 
   while (Date.now() - startTime < timeout) {
     attempt++;
 
-    if (verbose && attempt % 5 === 0) { // 每5秒显示一次进度
+    if (verbose && attempt % 5 === 0) { // Show progress every 5 seconds
       const elapsed = Date.now() - startTime;
-      console.log(`WebSocket检测进度: ${Math.round(elapsed/1000)}s / ${Math.round(timeout/1000)}s`);
+      console.log(`WebSocket detection progress: ${Math.round(elapsed/1000)}s / ${Math.round(timeout/1000)}s`);
     }
 
-    // 尝试多种检测方式
+    // Try multiple detection methods
     const isReady = await checkDevToolsRunning(port) || await checkWebSocketDirectly(port);
 
     if (isReady) {
       if (verbose) {
         const elapsed = Date.now() - startTime;
-        console.log(`WebSocket服务已启动，耗时: ${elapsed}ms`);
+        console.log(`WebSocket service started, elapsed: ${elapsed}ms`);
       }
       return;
     }
 
-    // 渐进式等待时间：前10次每500ms检查一次，之后每1000ms检查一次
+    // Progressive wait time: first 10 attempts every 500ms, then every 1000ms
     const waitTime = attempt <= 10 ? 500 : 1000;
     await sleep(waitTime);
   }
 
   const elapsed = Date.now() - startTime;
-  throw new Error(`WebSocket服务启动超时，端口: ${port}，已等待: ${elapsed}ms`);
+  throw new Error(`WebSocket service startup timeout, port: ${port}, waited: ${elapsed}ms`);
 }
 
 /**
- * 直接尝试WebSocket连接检测
+ * Try WebSocket connection detection directly
  */
 async function checkWebSocketDirectly(port: number): Promise<boolean> {
   return new Promise((resolve) => {
     try {
-      // 尝试创建WebSocket连接
+      // Try to create WebSocket connection
       const ws = new (require('ws'))(`ws://localhost:${port}`);
 
       const timeout = setTimeout(() => {
@@ -921,11 +921,11 @@ async function checkWebSocketDirectly(port: number): Promise<boolean> {
 }
 
 /**
- * 检查开发者工具是否运行
+ * Check if DevTools is running
  */
 export async function checkDevToolsRunning(port: number): Promise<boolean> {
   try {
-    // 尝试连接WebSocket来检测服务状态
+    // Try to connect to WebSocket to detect service status
     const response = await fetch(`http://localhost:${port}`, {
       signal: AbortSignal.timeout(1000)
     });
@@ -936,36 +936,36 @@ export async function checkDevToolsRunning(port: number): Promise<boolean> {
 }
 
 /**
- * 自动检测当前IDE运行的端口
- * 返回检测到的端口号，如果未检测到则返回 null
+ * Auto-detect the port currently running IDE
+ * Returns detected port number, or null if not detected
  */
 export async function detectIDEPort(verbose: boolean = false): Promise<number | null> {
-  // 常用端口列表
+  // Common ports list
   const commonPorts = [9420, 9440, 9430, 9450, 9460];
 
   if (verbose) {
-    console.log('🔍 检测微信开发者工具运行端口...');
+    console.log('🔍 Detecting WeChat DevTools running port...');
   }
 
-  // 策略1: 尝试常用端口
+  // Strategy 1: Try common ports
   for (const port of commonPorts) {
     if (verbose) {
-      console.log(`  检测端口 ${port}...`);
+      console.log(`  Detecting port ${port}...`);
     }
 
     if (await checkDevToolsRunning(port)) {
       if (verbose) {
-        console.log(`✅ 检测到IDE运行在端口 ${port}`);
+        console.log(`✅ Detected IDE running on port ${port}`);
       }
       return port;
     }
   }
 
-  // 策略2: 使用 lsof 命令检查（仅macOS/Linux）
+  // Strategy 2: Use lsof command to check (macOS/Linux only)
   if (process.platform === 'darwin' || process.platform === 'linux') {
     try {
       const { execSync } = await import('child_process');
-      // 查找微信开发者工具占用的端口，只检测9400-9500范围的自动化端口
+      // Find ports occupied by WeChat DevTools, only check automation ports in 9400-9500 range
       const output = execSync(
         "lsof -i -P | grep wechat | grep LISTEN | awk '{print $9}' | cut -d: -f2 | grep '^94[0-9][0-9]$'",
         { encoding: 'utf-8', timeout: 3000 }
@@ -975,15 +975,15 @@ export async function detectIDEPort(verbose: boolean = false): Promise<number | 
         const ports = output.split('\n').map((p: string) => parseInt(p, 10)).filter((p: number) => !isNaN(p));
 
         if (verbose && ports.length > 0) {
-          console.log(`  lsof检测到端口: ${ports.join(', ')}`);
+          console.log(`  lsof detected ports: ${ports.join(', ')}`);
         }
 
-        // 遍历检测到的端口，验证是否为有效的自动化端口
+        // Iterate over detected ports, verify if valid automation port
         for (const port of ports) {
           if (port >= 9400 && port <= 9500) {
             if (await checkDevToolsRunning(port)) {
               if (verbose) {
-                console.log(`✅ 通过lsof检测到IDE运行在端口 ${port}`);
+                console.log(`✅ Detected IDE running on port ${port} via lsof`);
               }
               return port;
             }
@@ -991,22 +991,22 @@ export async function detectIDEPort(verbose: boolean = false): Promise<number | 
         }
       }
     } catch (error) {
-      // lsof 失败，继续
+      // lsof failed, continue
       if (verbose) {
-        console.log('  lsof检测失败');
+        console.log('  lsof detection failed');
       }
     }
   }
 
   if (verbose) {
-    console.log('❌ 未检测到IDE运行端口');
+    console.log('❌ No IDE running port detected');
   }
 
   return null;
 }
 
 /**
- * 带重试的WebSocket连接
+ * WebSocket connection with retry
  */
 async function connectWithRetry(wsEndpoint: string, maxRetries: number): Promise<any> {
   for (let i = 0; i < maxRetries; i++) {
@@ -1016,24 +1016,24 @@ async function connectWithRetry(wsEndpoint: string, maxRetries: number): Promise
       if (i === maxRetries - 1) {
         throw error;
       }
-      // 指数退避重试
+      // Exponential backoff retry
       await sleep(1000 * Math.pow(2, i));
     }
   }
 }
 
 /**
- * 执行健康检查
+ * Perform health check
  */
 async function performHealthCheck(miniProgram: any): Promise<'healthy' | 'degraded' | 'unhealthy'> {
   try {
-    // 检查基本连接
+    // Check basic connection
     const currentPage = await miniProgram.currentPage();
     if (!currentPage) {
       return 'unhealthy';
     }
 
-    // 检查页面响应
+    // Check page response
     const path = await currentPage.path;
     if (!path) {
       return 'degraded';
@@ -1046,7 +1046,7 @@ async function performHealthCheck(miniProgram: any): Promise<'healthy' | 'degrad
 }
 
 /**
- * 带详细错误信息的执行包装器
+ * Execution wrapper with detailed error info
  */
 async function executeWithDetailedError<T>(
   operation: () => Promise<T>,
@@ -1056,7 +1056,7 @@ async function executeWithDetailedError<T>(
     return await operation();
   } catch (error) {
     const originalError = error instanceof Error ? error : new Error(String(error));
-    // 保留原始错误消息，不要用通用的"阶段失败"覆盖
+    // Keep original error message, don't override with generic "phase failed"
     throw new DevToolsConnectionError(
       originalError.message,
       phase,
@@ -1067,7 +1067,7 @@ async function executeWithDetailedError<T>(
 }
 
 /**
- * 元素快照接口
+ * Element snapshot interface
  */
 export interface ElementSnapshot {
   uid: string;
@@ -1083,7 +1083,7 @@ export interface ElementSnapshot {
 }
 
 /**
- * 页面快照接口
+ * Page snapshot interface
  */
 export interface PageSnapshot {
   path: string;
@@ -1091,16 +1091,16 @@ export interface PageSnapshot {
 }
 
 /**
- * 元素映射信息接口
- * 用于精确定位页面元素
+ * Element map info interface
+ * Used for precise element location on page
  */
 export interface ElementMapInfo {
-  selector: string;  // 基础选择器，如 "button.cube-btn"
-  index: number;     // 在匹配结果中的索引，从0开始
+  selector: string;  // Basic selector, e.g. "button.cube-btn"
+  index: number;     // Index in match results, starts from 0
 }
 
 /**
- * 生成元素的唯一标识符 (uid)
+ * Generate unique identifier (uid) for element
  */
 export async function generateElementUid(element: any, index: number): Promise<string> {
   try {
@@ -1128,44 +1128,44 @@ export async function generateElementUid(element: any, index: number): Promise<s
 }
 
 /**
- * 获取页面元素快照
+ * Get page element snapshot
  *
- * @param page 页面对象
- * @returns 页面快照和元素映射
+ * @param page Page object
+ * @returns Page snapshot and element map
  */
 export async function getPageSnapshot(page: any): Promise<{
   snapshot: PageSnapshot;
   elementMap: Map<string, ElementMapInfo>;
 }> {
   if (!page) {
-    throw new Error("页面对象是必需的");
+    throw new Error("Page object is required");
   }
 
   try {
     const elements: ElementSnapshot[] = [];
     const elementMap = new Map<string, ElementMapInfo>();
 
-    // 等待页面加载完成
+    // Wait for page to load
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // 尝试多种选择器策略获取元素
+    // Try multiple selector strategies to get elements
     let childElements: any[] = [];
     let usedStrategy = 'unknown';
 
-    // 策略1: 优先使用通配符（最快，一次API调用）
+    // Strategy 1: Prefer wildcard (fastest, single API call)
     try {
       childElements = await page.$$('*');
       if (childElements.length > 0) {
         usedStrategy = 'wildcard(*)';
-        console.log(`✅ 策略1成功: 通配符查询获取到 ${childElements.length} 个元素`);
+        console.log(`✅ Strategy 1 success: wildcard query obtained ${childElements.length} elements`);
       }
     } catch (error) {
-      console.warn('⚠️  策略1失败 (*)', error);
+      console.warn('⚠️ Strategy 1 failed (*)', error);
     }
 
-    // 策略2: 降级到常用组件选择器（仅当策略1失败时）
+    // Strategy 2: Degrade to common component selectors (only if strategy 1 fails)
     if (childElements.length === 0) {
-      console.log('🔄 策略1无结果，降级到策略2（常用组件选择器）');
+      console.log('🔄 Strategy 1 no results, degrading to strategy 2 (common component selectors)');
       const commonSelectors = [
         'view', 'text', 'button', 'image', 'input', 'textarea', 'picker', 'switch',
         'slider', 'scroll-view', 'swiper', 'icon', 'rich-text', 'progress',
@@ -1177,55 +1177,55 @@ export async function getPageSnapshot(page: any): Promise<{
           const elements = await page.$$(selector);
           childElements.push(...elements);
           if (elements.length > 0) {
-            console.log(`  - ${selector}: ${elements.length} 个元素`);
+            console.log(`  - ${selector}: ${elements.length} elements`);
           }
         } catch (error) {
-          // 忽略单个选择器失败
+          // Ignore individual selector failures
         }
       }
 
       if (childElements.length > 0) {
         usedStrategy = 'common-selectors';
-        console.log(`✅ 策略2成功: 获取到 ${childElements.length} 个元素`);
+        console.log(`✅ Strategy 2 success: obtained ${childElements.length} elements`);
       }
     }
 
-    // 策略3: 最后尝试层级选择器
+    // Strategy 3: Finally try hierarchical selectors
     if (childElements.length === 0) {
-      console.log('🔄 策略2无结果，降级到策略3（层级选择器）');
+      console.log('🔄 Strategy 2 no results, degrading to strategy 3 (hierarchical selectors)');
       try {
         const rootElements = await page.$$('page > *');
         childElements = rootElements;
         if (childElements.length > 0) {
           usedStrategy = 'hierarchical(page>*)';
-          console.log(`✅ 策略3成功: 获取到 ${childElements.length} 个元素`);
+          console.log(`✅ Strategy 3 success: obtained ${childElements.length} elements`);
         }
       } catch (error) {
-        console.warn('⚠️  策略3失败 (page > *)', error);
+        console.warn('⚠️ Strategy 3 failed (page > *)', error);
       }
     }
 
     if (childElements.length === 0) {
-      console.warn('❌ 所有策略均未获取到元素');
+      console.warn('❌ All strategies failed to obtain elements');
       return {
         snapshot: { path: await page.path, elements: [] },
         elementMap: new Map()
       };
     }
 
-    console.log(`📊 最终获取到 ${childElements.length} 个元素（策略：${usedStrategy}）`);
+    console.log(`📊 Finally obtained ${childElements.length} elements (strategy: ${usedStrategy})`);
 
-    // 用于跟踪每个基础选择器的元素计数
+    // Track element count for each base selector
     const selectorIndexMap = new Map<string, number>();
 
-    // 优化：批量并行处理元素属性
+    // Optimization: batch parallel processing of element attributes
     const startTime = Date.now();
 
     for (let i = 0; i < childElements.length; i++) {
       const element = childElements[i];
       try {
-        // 🚀 优化点1: 使用 Promise.allSettled 并行获取所有元素属性
-        // 减少API调用往返次数：从 6次串行 → 1次并行
+        // 🚀 Optimization 1: Use Promise.allSettled to parallel get all element properties
+        // Reduce API call round trips: from 6 serial → 1 parallel
         const [
           tagNameResult,
           textResult,
@@ -1242,7 +1242,7 @@ export async function getPageSnapshot(page: any): Promise<{
           element.offset().catch(() => null)
         ]);
 
-        // 提取结果
+        // Extract results
         const tagName = tagNameResult.status === 'fulfilled' ? tagNameResult.value : 'unknown';
         const text = textResult.status === 'fulfilled' ? textResult.value : '';
         const className = classResult.status === 'fulfilled' ? classResult.value : '';
@@ -1250,7 +1250,7 @@ export async function getPageSnapshot(page: any): Promise<{
         const size = sizeResult.status === 'fulfilled' ? sizeResult.value : null;
         const offset = offsetResult.status === 'fulfilled' ? offsetResult.value : null;
 
-        // 生成UID（使用已获取的 tagName, className, id，避免重复查询）
+        // Generate UID (use obtained tagName, className, id, avoid redundant queries)
         let selector = tagName;
         if (id) {
           selector += `#${id}`;
@@ -1262,18 +1262,18 @@ export async function getPageSnapshot(page: any): Promise<{
 
         const uid = selector;
 
-        // 构建快照
+        // Build snapshot
         const snapshot: ElementSnapshot = {
           uid,
           tagName,
         };
 
-        // 添加文本内容
+        // Add text content
         if (text && text.trim()) {
           snapshot.text = text.trim();
         }
 
-        // 添加位置信息
+        // Add position info
         if (size && offset) {
           snapshot.position = {
             left: offset.left,
@@ -1283,12 +1283,12 @@ export async function getPageSnapshot(page: any): Promise<{
           };
         }
 
-        // 添加属性信息（可选，目前不收集）
-        // 如果需要属性，可以在上面的 Promise.allSettled 中添加更多属性查询
+        // Add attribute info (optional, not collected currently)
+        // If attributes needed, add more attribute queries in Promise.allSettled above
 
         elements.push(snapshot);
 
-        // 生成可查询的基础选择器
+        // Generate queryable base selector
         let baseSelector = tagName;
         if (id) {
           baseSelector = `${tagName}#${id}`;
@@ -1296,23 +1296,23 @@ export async function getPageSnapshot(page: any): Promise<{
           baseSelector = `${tagName}.${className.split(' ')[0]}`;
         }
 
-        // 计算该选择器的元素索引（递增计数）
+        // Calculate element index for this selector (incremental count)
         const currentIndex = selectorIndexMap.get(baseSelector) || 0;
         selectorIndexMap.set(baseSelector, currentIndex + 1);
 
-        // 存储 ElementMapInfo
+        // Store ElementMapInfo
         elementMap.set(uid, {
           selector: baseSelector,
           index: currentIndex
         });
 
       } catch (error) {
-        console.warn(`⚠️  处理元素 ${i} 时出错:`, error);
+        console.warn(`⚠️ Error processing element ${i}:`, error);
       }
     }
 
     const processingTime = Date.now() - startTime;
-    console.log(`⏱️  元素处理耗时: ${processingTime}ms (平均 ${(processingTime / childElements.length).toFixed(2)}ms/元素)`);
+    console.log(`⏱️ Element processing time: ${processingTime}ms (average ${(processingTime / childElements.length).toFixed(2)}ms/element)`);
 
     const pagePath = await page.path;
     const snapshot: PageSnapshot = {
@@ -1323,12 +1323,12 @@ export async function getPageSnapshot(page: any): Promise<{
     return { snapshot, elementMap };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`获取页面快照失败: ${errorMessage}`);
+    throw new Error(`Failed to get page snapshot: ${errorMessage}`);
   }
 }
 
 /**
- * 点击元素选项接口
+ * Click element options interface
  */
 export interface ClickOptions {
   uid: string;
@@ -1336,11 +1336,11 @@ export interface ClickOptions {
 }
 
 /**
- * 点击页面元素
+ * Click page element
  *
- * @param page 页面对象
- * @param elementMap 元素映射
- * @param options 点击选项
+ * @param page Page object
+ * @param elementMap Element map
+ * @param options Click options
  */
 export async function clickElement(
   page: any,
@@ -1350,147 +1350,147 @@ export async function clickElement(
   const { uid, dblClick = false } = options;
 
   if (!uid) {
-    throw new Error("元素uid是必需的");
+    throw new Error("Element uid is required");
   }
 
   if (!page) {
-    throw new Error("页面对象是必需的");
+    throw new Error("Page object is required");
   }
 
   try {
-    // 通过uid查找元素映射信息
+    // Find element map info by uid
     const mapInfo = elementMap.get(uid);
     if (!mapInfo) {
-      throw new Error(`找不到uid为 ${uid} 的元素，请先获取页面快照`);
+      throw new Error(`Cannot find element with uid ${uid}, please get page snapshot first`);
     }
 
-    console.log(`[Click] 准备点击元素 - UID: ${uid}, Selector: ${mapInfo.selector}, Index: ${mapInfo.index}`);
+    console.log(`[Click] Ready to click element - UID: ${uid}, Selector: ${mapInfo.selector}, Index: ${mapInfo.index}`);
 
-    // 使用选择器获取所有匹配元素
+    // Get all matching elements using selector
     const elements = await page.$$(mapInfo.selector);
     if (!elements || elements.length === 0) {
-      throw new Error(`无法找到选择器为 ${mapInfo.selector} 的元素`);
+      throw new Error(`Cannot find element with selector ${mapInfo.selector}`);
     }
 
-    // 检查索引是否有效
+    // Check if index is valid
     if (mapInfo.index >= elements.length) {
-      throw new Error(`元素索引 ${mapInfo.index} 超出范围，共找到 ${elements.length} 个元素`);
+      throw new Error(`Element index ${mapInfo.index} out of range, found ${elements.length} elements`);
     }
 
-    // 通过索引获取目标元素
+    // Get target element by index
     const element = elements[mapInfo.index];
     if (!element) {
-      throw new Error(`无法获取索引为 ${mapInfo.index} 的元素`);
+      throw new Error(`Cannot get element at index ${mapInfo.index}`);
     }
 
-    // 记录点击前的页面路径
+    // Record page path before click
     const beforePath = await page.path;
-    console.log(`[Click] 点击前页面: ${beforePath}`);
+    console.log(`[Click] Page before click: ${beforePath}`);
 
-    // 执行点击操作
+    // Execute click
     await element.tap();
-    console.log(`[Click] 已执行 tap() 操作`);
+    console.log(`[Click] Executed tap() operation`);
 
-    // 如果是双击，再点击一次
+    // If double click, click again
     if (dblClick) {
-      await new Promise(resolve => setTimeout(resolve, 100)); // 短暂延迟
+      await new Promise(resolve => setTimeout(resolve, 100)); // Short delay
       await element.tap();
-      console.log(`[Click] 已执行第二次 tap() (双击)`);
+      console.log(`[Click] Executed second tap() (double-click)`);
     }
 
-    // 等待一小段时间，让页面有机会响应
+    // Wait a moment for page to respond
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    // 记录点击后的页面路径
+    // Record page path after click
     try {
       const afterPath = await page.path;
-      console.log(`[Click] 点击后页面: ${afterPath}`);
+      console.log(`[Click] Page after click: ${afterPath}`);
       if (beforePath !== afterPath) {
-        console.log(`[Click] ✅ 页面已切换: ${beforePath} → ${afterPath}`);
+        console.log(`[Click] ✅ Page switched: ${beforePath} → ${afterPath}`);
       } else {
-        console.log(`[Click] ⚠️  页面未切换，可能是同页面操作或导航延迟`);
+        console.log(`[Click] ⚠️ Page not switched, may be same-page operation or navigation delay`);
       }
     } catch (error) {
-      console.warn(`[Click] 无法获取点击后的页面路径:`, error);
+      console.warn(`[Click] Cannot get page path after click:`, error);
     }
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`[Click] 点击失败:`, error);
-    throw new Error(`点击元素失败: ${errorMessage}`);
+    console.error(`[Click] Click failed:`, error);
+    throw new Error(`Failed to click element: ${errorMessage}`);
   }
 }
 
 /**
- * 截图选项接口
+ * Screenshot options interface
  */
 export interface ScreenshotOptions {
   path?: string;
 }
 
 /**
- * 页面截图
+ * Page screenshot
  *
- * @param miniProgram MiniProgram 对象
- * @param options 截图选项
- * @returns 如果没有指定路径，返回base64数据；否则返回undefined
+ * @param miniProgram MiniProgram object
+ * @param options Screenshot options
+ * @returns If path not specified, returns base64 data; otherwise returns undefined
  */
 export async function takeScreenshot(
   miniProgram: any,
   options: ScreenshotOptions = {}
 ): Promise<string | undefined> {
   if (!miniProgram) {
-    throw new Error("MiniProgram对象是必需的");
+    throw new Error("MiniProgram object is required");
   }
 
   try {
     const { path } = options;
 
-    // 确保页面完全加载和稳定
+    // Ensure page is fully loaded and stable
     try {
-      console.log('获取当前页面并等待稳定...')
+      console.log('Getting current page and waiting for stability...')
       const currentPage = await miniProgram.currentPage();
       if (currentPage && typeof currentPage.waitFor === 'function') {
-        // 等待页面稳定，增加等待时间
+        // Wait for page stability, increase wait time
         await currentPage.waitFor(1000);
-        console.log('页面等待完成')
+        console.log('Page wait completed')
       }
     } catch (waitError) {
-      console.warn('页面等待失败，继续尝试截图:', waitError)
+      console.warn('Page wait failed, continue trying screenshot:', waitError)
     }
 
-    // 重试机制执行截图
+    // Retry mechanism for screenshot
     let result: string | undefined
     let lastError: Error | undefined
 
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        console.log(`截图尝试 ${attempt}/3`)
+        console.log(`Screenshot attempt ${attempt}/3`)
         if (path) {
-          // 保存到指定路径
+          // Save to specified path
           await miniProgram.screenshot({ path });
           result = undefined
-          console.log(`截图保存成功: ${path}`)
+          console.log(`Screenshot saved successfully: ${path}`)
           break
         } else {
-          // 返回base64数据
+          // Return base64 data
           const base64Data = await miniProgram.screenshot();
-          console.log('截图API调用完成，检查返回数据...')
+          console.log('Screenshot API call completed, checking return data...')
           if (base64Data && typeof base64Data === 'string' && base64Data.length > 0) {
             result = base64Data
-            console.log(`截图成功，数据长度: ${base64Data.length}`)
+            console.log(`Screenshot successful, data length: ${base64Data.length}`)
             break
           } else {
-            throw new Error(`截图返回无效数据: ${typeof base64Data}, 长度: ${base64Data ? base64Data.length : 'null'}`)
+            throw new Error(`Screenshot returned invalid data: ${typeof base64Data}, length: ${base64Data ? base64Data.length : 'null'}`)
           }
         }
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error))
-        console.warn(`截图尝试 ${attempt} 失败:`, lastError.message)
+        console.warn(`Screenshot attempt ${attempt} failed:`, lastError.message)
 
         if (attempt < 3) {
-          // 重试前等待更长时间，让页面稳定
-          console.log(`等待 ${1000 + attempt * 500}ms 后重试...`)
+          // Wait longer before retry, let page stabilize
+          console.log(`Waiting ${1000 + attempt * 500}ms before retry...`)
           await new Promise(resolve => setTimeout(resolve, 1000 + attempt * 500))
         }
       }
@@ -1499,36 +1499,36 @@ export async function takeScreenshot(
     if (!result && !path) {
       const troubleshootingTips = `
 
-⚠️  截图功能故障排除建议：
-1. 确保微信开发者工具处于**模拟器模式**（非真机调试）
-2. 检查工具设置:
-   - 设置 → 安全设置 → 服务端口 ✅
-   - 设置 → 通用设置 → 自动化测试 ✅
-3. 检查 macOS 系统权限:
-   - 系统偏好设置 → 安全性与隐私 → 隐私 → 屏幕录制
-   - 确保微信开发者工具在允许列表中
-4. 尝试重启微信开发者工具
-5. 查看详细文档: docs/SCREENSHOT_ISSUE.md
+⚠️ Screenshot troubleshooting tips:
+1. Ensure WeChat DevTools is in **simulator mode** (not device debug)
+2. Check tool settings:
+   - Settings → Security Settings → Service Port ✅
+   - Settings → General Settings → Automation Test ✅
+3. Check macOS system permissions:
+   - System Preferences → Security & Privacy → Privacy → Screen Recording
+   - Ensure WeChat DevTools is in allow list
+4. Try restarting WeChat DevTools
+5. See detailed documentation: docs/SCREENSHOT_ISSUE.md
 
-最后错误: ${lastError?.message || '未知错误'}`;
+Last error: ${lastError?.message || 'Unknown error'}`;
 
-      throw new Error(`截图失败，已重试3次${troubleshootingTips}`)
+      throw new Error(`Screenshot failed, retried 3 times${troubleshootingTips}`)
     }
 
     return result
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    // 如果错误信息已包含故障排除建议，直接抛出
-    if (errorMessage.includes('故障排除建议')) {
+    // If error message already contains troubleshooting tips, throw directly
+    if (errorMessage.includes('troubleshooting')) {
       throw error;
     }
-    // 否则添加简要提示
-    throw new Error(`${errorMessage}\n\n提示: 查看 docs/SCREENSHOT_ISSUE.md 了解详细的故障排除方法`);
+    // Otherwise add brief tip
+    throw new Error(`${errorMessage}\n\nTip: See docs/SCREENSHOT_ISSUE.md for detailed troubleshooting methods`);
   }
 }
 
 /**
- * 查询结果接口
+ * Query result interface
  */
 export interface QueryResult {
   uid: string;
@@ -1544,19 +1544,19 @@ export interface QueryResult {
 }
 
 /**
- * 查询元素选项接口
+ * Query element options interface
  */
 export interface QueryOptions {
   selector: string;
 }
 
 /**
- * 通过选择器查询页面元素
+ * Query page elements by selector
  *
- * @param page 页面对象
- * @param elementMap 元素映射
- * @param options 查询选项
- * @returns 匹配元素的信息数组
+ * @param page Page object
+ * @param elementMap Element map
+ * @param options Query options
+ * @returns Array of matched element info
  */
 export async function queryElements(
   page: any,
@@ -1566,32 +1566,32 @@ export async function queryElements(
   const { selector } = options;
 
   if (!selector || typeof selector !== 'string' || selector.trim() === '') {
-    throw new Error("选择器不能为空");
+    throw new Error("Selector cannot be empty");
   }
 
   if (!page) {
-    throw new Error("页面对象是必需的");
+    throw new Error("Page object is required");
   }
 
   try {
-    // 通过选择器查找元素
+    // Find elements by selector
     const elements = await page.$$(selector);
     const results: QueryResult[] = [];
 
-    // 用于跟踪 UID 冲突
+    // Track UID conflicts
     const uidCounter = new Map<string, number>();
 
     for (let i = 0; i < elements.length; i++) {
       const element = elements[i];
       try {
-        // 使用 generateElementUid 生成基础 UID
+        // Use generateElementUid to generate base UID
         const baseUid = await generateElementUid(element, i);
 
-        // 检测 UID 冲突并添加 [N] 后缀
+        // Detect UID conflicts and add [N] suffix
         const count = uidCounter.get(baseUid) || 0;
         uidCounter.set(baseUid, count + 1);
 
-        // 第一个元素不加后缀，后续元素添加 [N] 后缀
+        // First element no suffix, subsequent elements add [N] suffix
         const uid = count === 0 ? baseUid : `${baseUid}[${count + 1}]`;
 
         const result: QueryResult = {
@@ -1599,17 +1599,17 @@ export async function queryElements(
           tagName: element.tagName || 'unknown',
         };
 
-        // 获取元素文本
+        // Get element text
         try {
           const text = await element.text();
           if (text && text.trim()) {
             result.text = text.trim();
           }
         } catch (error) {
-          // 忽略无法获取文本的元素
+          // Ignore elements that can't get text
         }
 
-        // 获取元素位置信息
+        // Get element position info
         try {
           const [size, offset] = await Promise.all([
             element.size(),
@@ -1623,10 +1623,10 @@ export async function queryElements(
             height: size.height
           };
         } catch (error) {
-          // 忽略无法获取位置的元素
+          // Ignore elements that can't get position
         }
 
-        // 获取常用属性
+        // Get common attributes
         try {
           const attributes: Record<string, string> = {};
           const commonAttrs = ['class', 'id', 'data-testid'];
@@ -1637,7 +1637,7 @@ export async function queryElements(
                 attributes[attr] = value;
               }
             } catch (error) {
-              // 忽略不存在的属性
+              // Ignore non-existent attributes
             }
           }
 
@@ -1645,15 +1645,15 @@ export async function queryElements(
             result.attributes = attributes;
           }
         } catch (error) {
-          // 忽略属性获取错误
+          // Ignore attribute retrieval errors
         }
 
         results.push(result);
 
-        // 填充 elementMap：使用原始查询选择器和数组索引
+        // Populate elementMap: use original query selector and array index
         elementMap.set(uid, {
-          selector: selector,  // 使用原始查询选择器，而不是 baseUid
-          index: i             // 使用在查询结果中的索引位置
+          selector: selector,  // Use original query selector, not baseUid
+          index: i             // Use index position in query results
         });
 
       } catch (error) {
@@ -1664,47 +1664,47 @@ export async function queryElements(
     return results;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`查询元素失败: ${errorMessage}`);
+    throw new Error(`Failed to query elements: ${errorMessage}`);
   }
 }
 
 /**
- * 等待条件接口
+ * Wait conditions interface
  */
 export interface WaitForOptions {
-  selector?: string;     // 等待元素选择器
-  timeout?: number;      // 超时时间(ms)，默认5000ms
-  text?: string;         // 等待文本匹配
-  visible?: boolean;     // 等待元素可见状态
-  disappear?: boolean;   // 等待元素消失
+  selector?: string;     // Wait for element selector
+  timeout?: number;      // Timeout (ms), default 5000ms
+  text?: string;         // Wait for text match
+  visible?: boolean;     // Wait for element visibility state
+  disappear?: boolean;   // Wait for element to disappear
 }
 
 /**
- * 等待条件满足
+ * Wait for condition to be satisfied
  *
- * @param page 页面对象
- * @param options 等待选项
- * @returns 等待结果
+ * @param page Page object
+ * @param options Wait options
+ * @returns Wait result
  */
 export async function waitForCondition(
   page: any,
   options: WaitForOptions | number | string
 ): Promise<boolean> {
   if (!page) {
-    throw new Error("页面对象是必需的");
+    throw new Error("Page object is required");
   }
 
   try {
-    // 处理简单的数字超时
+    // Handle simple numeric timeout
     if (typeof options === 'number') {
       await page.waitFor(options);
       return true;
     }
 
-    // 处理简单的选择器字符串
+    // Handle simple selector string
     if (typeof options === 'string') {
       const startTime = Date.now();
-      const timeout = 5000; // 默认5秒超时
+      const timeout = 5000; // Default 5 second timeout
 
       while (Date.now() - startTime < timeout) {
         try {
@@ -1713,14 +1713,14 @@ export async function waitForCondition(
             return true;
           }
         } catch (error) {
-          // 继续等待
+          // Continue waiting
         }
         await new Promise(resolve => setTimeout(resolve, 100));
       }
-      throw new Error(`等待元素 ${options} 超时`);
+      throw new Error(`Timeout waiting for element ${options}`);
     }
 
-    // 处理复杂的等待条件对象
+    // Handle complex wait condition object
     const {
       selector,
       timeout = 5000,
@@ -1737,35 +1737,35 @@ export async function waitForCondition(
           const element = await page.$(selector);
 
           if (disappear) {
-            // 等待元素消失
+            // Wait for element to disappear
             if (!element) {
               return true;
             }
           } else {
-            // 等待元素出现
+            // Wait for element to appear
             if (element) {
-              // 检查文本匹配
+              // Check text match
               if (text) {
                 try {
                   const elementText = await element.text();
                   if (!elementText || !elementText.includes(text)) {
-                    throw new Error('文本不匹配');
+                    throw new Error('Text not matching');
                   }
                 } catch (error) {
-                  throw new Error('文本不匹配');
+                  throw new Error('Text not matching');
                 }
               }
 
-              // 检查可见性
+              // Check visibility
               if (visible !== undefined) {
                 try {
                   const size = await element.size();
                   const isVisible = size.width > 0 && size.height > 0;
                   if (isVisible !== visible) {
-                    throw new Error('可见性不匹配');
+                    throw new Error('Visibility not matching');
                   }
                 } catch (error) {
-                  throw new Error('可见性不匹配');
+                  throw new Error('Visibility not matching');
                 }
               }
 
@@ -1773,35 +1773,35 @@ export async function waitForCondition(
             }
           }
         } else if (typeof timeout === 'number') {
-          // 简单的时间等待
+          // Simple time wait
           await page.waitFor(timeout);
           return true;
         }
       } catch (error) {
-        // 继续等待，直到超时
+        // Continue waiting until timeout
       }
 
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    // 构建错误信息
-    let errorMsg = '等待条件超时: ';
+    // Build error message
+    let errorMsg = 'Timeout waiting for condition: ';
     if (selector) {
-      errorMsg += `选择器 ${selector}`;
-      if (disappear) errorMsg += ' 消失';
-      if (text) errorMsg += ` 包含文本 "${text}"`;
-      if (visible !== undefined) errorMsg += ` ${visible ? '可见' : '隐藏'}`;
+      errorMsg += `selector ${selector}`;
+      if (disappear) errorMsg += ' disappear';
+      if (text) errorMsg += ` contain text "${text}"`;
+      if (visible !== undefined) errorMsg += ` ${visible ? 'visible' : 'hidden'}`;
     }
     throw new Error(errorMsg);
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`等待条件失败: ${errorMessage}`);
+    throw new Error(`Failed to wait for condition: ${errorMessage}`);
   }
 }
 
 /**
- * 文本输入选项接口
+ * Text input options interface
  */
 export interface InputTextOptions {
   uid: string;
@@ -1811,7 +1811,7 @@ export interface InputTextOptions {
 }
 
 /**
- * 表单控件选项接口
+ * Form control options interface
  */
 export interface FormControlOptions {
   uid: string;
@@ -1820,7 +1820,7 @@ export interface FormControlOptions {
 }
 
 /**
- * 获取值选项接口
+ * Get value options interface
  */
 export interface GetValueOptions {
   uid: string;
@@ -1828,11 +1828,11 @@ export interface GetValueOptions {
 }
 
 /**
- * 向元素输入文本
+ * Input text to element
  *
- * @param page 页面对象
- * @param elementMap 元素映射
- * @param options 输入选项
+ * @param page Page object
+ * @param elementMap Element map
+ * @param options Input options
  */
 export async function inputText(
   page: any,
@@ -1842,45 +1842,45 @@ export async function inputText(
   const { uid, text, clear = false, append = false } = options;
 
   if (!uid) {
-    throw new Error("元素uid是必需的");
+    throw new Error("Element uid is required");
   }
 
   if (!page) {
-    throw new Error("页面对象是必需的");
+    throw new Error("Page object is required");
   }
 
   try {
-    // 通过uid查找元素映射信息
+    // Find element map info by uid
     const mapInfo = elementMap.get(uid);
     if (!mapInfo) {
-      throw new Error(`找不到uid为 ${uid} 的元素，请先获取页面快照`);
+      throw new Error(`Cannot find element with uid ${uid}, please get page snapshot first`);
     }
 
-    // 使用选择器获取所有匹配元素
+    // Get all matching elements using selector
     const elements = await page.$$(mapInfo.selector);
     if (!elements || elements.length === 0) {
-      throw new Error(`无法找到选择器为 ${mapInfo.selector} 的元素`);
+      throw new Error(`Cannot find element with selector ${mapInfo.selector}`);
     }
 
-    // 检查索引是否有效
+    // Check if index is valid
     if (mapInfo.index >= elements.length) {
-      throw new Error(`元素索引 ${mapInfo.index} 超出范围，共找到 ${elements.length} 个元素`);
+      throw new Error(`Element index ${mapInfo.index} out of range, found ${elements.length} elements`);
     }
 
-    // 通过索引获取目标元素
+    // Get target element by index
     const element = elements[mapInfo.index];
     if (!element) {
-      throw new Error(`无法获取索引为 ${mapInfo.index} 的元素`);
+      throw new Error(`Cannot get element at index ${mapInfo.index}`);
     }
 
-    // 清空元素（如果需要）
+    // Clear element (if needed)
     if (clear && !append) {
       await element.clear();
     }
 
-    // 输入文本
+    // Input text
     if (append) {
-      // 追加模式：先获取现有值
+      // Append mode: get existing value first
       const currentValue = await element.value().catch(() => '');
       await element.input(currentValue + text);
     } else {
@@ -1889,17 +1889,17 @@ export async function inputText(
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`文本输入失败: ${errorMessage}`);
+    throw new Error(`Failed to input text: ${errorMessage}`);
   }
 }
 
 /**
- * 获取元素值
+ * Get element value
  *
- * @param page 页面对象
- * @param elementMap 元素映射
- * @param options 获取选项
- * @returns 元素值
+ * @param page Page object
+ * @param elementMap Element map
+ * @param options Get options
+ * @returns Element value
  */
 export async function getElementValue(
   page: any,
@@ -1909,42 +1909,42 @@ export async function getElementValue(
   const { uid, attribute } = options;
 
   if (!uid) {
-    throw new Error("元素uid是必需的");
+    throw new Error("Element uid is required");
   }
 
   if (!page) {
-    throw new Error("页面对象是必需的");
+    throw new Error("Page object is required");
   }
 
   try {
-    // 通过uid查找元素映射信息
+    // Find element map info by uid
     const mapInfo = elementMap.get(uid);
     if (!mapInfo) {
-      throw new Error(`找不到uid为 ${uid} 的元素，请先获取页面快照`);
+      throw new Error(`Cannot find element with uid ${uid}, please get page snapshot first`);
     }
 
-    // 使用选择器获取所有匹配元素
+    // Get all matching elements using selector
     const elements = await page.$$(mapInfo.selector);
     if (!elements || elements.length === 0) {
-      throw new Error(`无法找到选择器为 ${mapInfo.selector} 的元素`);
+      throw new Error(`Cannot find element with selector ${mapInfo.selector}`);
     }
 
-    // 检查索引是否有效
+    // Check if index is valid
     if (mapInfo.index >= elements.length) {
-      throw new Error(`元素索引 ${mapInfo.index} 超出范围，共找到 ${elements.length} 个元素`);
+      throw new Error(`Element index ${mapInfo.index} out of range, found ${elements.length} elements`);
     }
 
-    // 通过索引获取目标元素
+    // Get target element by index
     const element = elements[mapInfo.index];
     if (!element) {
-      throw new Error(`无法获取索引为 ${mapInfo.index} 的元素`);
+      throw new Error(`Cannot get element at index ${mapInfo.index}`);
     }
 
-    // 获取值
+    // Get value
     if (attribute) {
       return await element.attribute(attribute);
     } else {
-      // 尝试获取value属性，如果失败则获取text
+      // Try to get value property, if fails get text
       try {
         return await element.value();
       } catch (error) {
@@ -1954,16 +1954,16 @@ export async function getElementValue(
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`获取元素值失败: ${errorMessage}`);
+    throw new Error(`Failed to get element value: ${errorMessage}`);
   }
 }
 
 /**
- * 设置表单控件值
+ * Set form control value
  *
- * @param page 页面对象
- * @param elementMap 元素映射
- * @param options 设置选项
+ * @param page Page object
+ * @param elementMap Element map
+ * @param options Set options
  */
 export async function setFormControl(
   page: any,
@@ -1973,48 +1973,48 @@ export async function setFormControl(
   const { uid, value, trigger = 'change' } = options;
 
   if (!uid) {
-    throw new Error("元素uid是必需的");
+    throw new Error("Element uid is required");
   }
 
   if (!page) {
-    throw new Error("页面对象是必需的");
+    throw new Error("Page object is required");
   }
 
   try {
-    // 通过uid查找元素映射信息
+    // Find element map info by uid
     const mapInfo = elementMap.get(uid);
     if (!mapInfo) {
-      throw new Error(`找不到uid为 ${uid} 的元素，请先获取页面快照`);
+      throw new Error(`Cannot find element with uid ${uid}, please get page snapshot first`);
     }
 
-    // 使用选择器获取所有匹配元素
+    // Get all matching elements using selector
     const elements = await page.$$(mapInfo.selector);
     if (!elements || elements.length === 0) {
-      throw new Error(`无法找到选择器为 ${mapInfo.selector} 的元素`);
+      throw new Error(`Cannot find element with selector ${mapInfo.selector}`);
     }
 
-    // 检查索引是否有效
+    // Check if index is valid
     if (mapInfo.index >= elements.length) {
-      throw new Error(`元素索引 ${mapInfo.index} 超出范围，共找到 ${elements.length} 个元素`);
+      throw new Error(`Element index ${mapInfo.index} out of range, found ${elements.length} elements`);
     }
 
-    // 通过索引获取目标元素
+    // Get target element by index
     const element = elements[mapInfo.index];
     if (!element) {
-      throw new Error(`无法获取索引为 ${mapInfo.index} 的元素`);
+      throw new Error(`Cannot get element at index ${mapInfo.index}`);
     }
 
-    // 设置值并触发事件
+    // Set value and trigger event
     await element.trigger(trigger, { value });
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`设置表单控件失败: ${errorMessage}`);
+    throw new Error(`Failed to set form control: ${errorMessage}`);
   }
 }
 
 /**
- * 断言结果接口
+ * Assert result interface
  */
 export interface AssertResult {
   passed: boolean;
@@ -2025,7 +2025,7 @@ export interface AssertResult {
 }
 
 /**
- * 元素存在性断言选项接口
+ * Element existence assertion options interface
  */
 export interface ExistenceAssertOptions {
   selector?: string;
@@ -2035,7 +2035,7 @@ export interface ExistenceAssertOptions {
 }
 
 /**
- * 元素状态断言选项接口
+ * Element state assertion options interface
  */
 export interface StateAssertOptions {
   uid: string;
@@ -2046,7 +2046,7 @@ export interface StateAssertOptions {
 }
 
 /**
- * 内容断言选项接口
+ * Content assertion options interface
  */
 export interface ContentAssertOptions {
   uid: string;
@@ -2057,11 +2057,11 @@ export interface ContentAssertOptions {
 }
 
 /**
- * 断言元素存在性
+ * Assert element existence
  *
- * @param page 页面对象
- * @param options 断言选项
- * @returns 断言结果
+ * @param page Page object
+ * @param options Assert options
+ * @returns Assert result
  */
 export async function assertElementExists(
   page: any,
@@ -2070,11 +2070,11 @@ export async function assertElementExists(
   const { selector, uid, timeout = 5000, shouldExist } = options;
 
   if (!selector && !uid) {
-    throw new Error("必须提供selector或uid参数");
+    throw new Error("Must provide selector or uid parameter");
   }
 
   if (!page) {
-    throw new Error("页面对象是必需的");
+    throw new Error("Page object is required");
   }
 
   const startTime = Date.now();
@@ -2082,14 +2082,14 @@ export async function assertElementExists(
   let actualExists = false;
 
   try {
-    // 在超时时间内检查元素存在性
+    // Check element existence within timeout
     while (Date.now() - startTime < timeout) {
       try {
         if (selector) {
           element = await page.$(selector);
         } else if (uid) {
-          // 如果只有uid，需要先从elementMap获取selector
-          // 这里假设调用者已经有了正确的映射关系
+          // If only uid, need to get selector from elementMap first
+          // Assume caller has correct mapping
           element = await page.$(uid);
         }
 
@@ -2098,7 +2098,7 @@ export async function assertElementExists(
         if (actualExists === shouldExist) {
           return {
             passed: true,
-            message: `断言通过: 元素${shouldExist ? '存在' : '不存在'}`,
+            message: `Assert passed: element ${shouldExist ? 'exists' : 'does not exist'}`,
             actual: actualExists,
             expected: shouldExist,
             timestamp: Date.now()
@@ -2107,14 +2107,14 @@ export async function assertElementExists(
 
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
-        // 继续检查直到超时
+        // Continue checking until timeout
       }
     }
 
-    // 超时后返回失败结果
+    // Return failure result after timeout
     return {
       passed: false,
-      message: `断言失败: 期望元素${shouldExist ? '存在' : '不存在'}，实际${actualExists ? '存在' : '不存在'}`,
+      message: `Assert failed: expected element ${shouldExist ? 'exists' : 'does not exist'}, actual ${actualExists ? 'exists' : 'does not exist'}`,
       actual: actualExists,
       expected: shouldExist,
       timestamp: Date.now()
@@ -2124,7 +2124,7 @@ export async function assertElementExists(
     const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       passed: false,
-      message: `断言执行失败: ${errorMessage}`,
+      message: `Assert execution failed: ${errorMessage}`,
       actual: null,
       expected: shouldExist,
       timestamp: Date.now()
@@ -2133,12 +2133,12 @@ export async function assertElementExists(
 }
 
 /**
- * 断言元素可见性
+ * Assert element visibility
  *
- * @param page 页面对象
- * @param elementMap 元素映射
- * @param options 断言选项
- * @returns 断言结果
+ * @param page Page object
+ * @param elementMap Element map
+ * @param options Assert options
+ * @returns Assert result
  */
 export async function assertElementVisible(
   page: any,
@@ -2148,66 +2148,66 @@ export async function assertElementVisible(
   const { uid, visible } = options;
 
   if (visible === undefined) {
-    throw new Error("必须指定visible参数");
+    throw new Error("Must specify visible parameter");
   }
 
   if (!uid) {
-    throw new Error("元素uid是必需的");
+    throw new Error("Element uid is required");
   }
 
   if (!page) {
-    throw new Error("页面对象是必需的");
+    throw new Error("Page object is required");
   }
 
   try {
-    // 通过uid查找元素映射信息
+    // Find element map info by uid
     const mapInfo = elementMap.get(uid);
     if (!mapInfo) {
       return {
         passed: false,
-        message: `断言失败: 找不到uid为 ${uid} 的元素`,
+        message: `Assert failed: cannot find element with uid ${uid}`,
         actual: null,
         expected: visible,
         timestamp: Date.now()
       };
     }
 
-    // 使用选择器获取所有匹配元素
+    // Get all matching elements using selector
     const elements = await page.$$(mapInfo.selector);
     if (!elements || elements.length === 0) {
       return {
         passed: false,
-        message: `断言失败: 无法找到选择器为 ${mapInfo.selector} 的元素`,
+        message: `Assert failed: cannot find element with selector ${mapInfo.selector}`,
         actual: false,
         expected: visible,
         timestamp: Date.now()
       };
     }
 
-    // 检查索引是否有效
+    // Check if index is valid
     if (mapInfo.index >= elements.length) {
       return {
         passed: false,
-        message: `断言失败: 元素索引 ${mapInfo.index} 超出范围，共找到 ${elements.length} 个元素`,
+        message: `Assert failed: element index ${mapInfo.index} out of range, found ${elements.length} elements`,
         actual: false,
         expected: visible,
         timestamp: Date.now()
       };
     }
 
-    // 通过索引获取目标元素
+    // Get target element by index
     const element = elements[mapInfo.index];
     if (!element) {
       return {
         passed: false,
-        message: `断言失败: 无法获取索引为 ${mapInfo.index} 的元素`,
+        message: `Assert failed: cannot get element at index ${mapInfo.index}`,
         actual: false,
         expected: visible,
         timestamp: Date.now()
       };
     }
 
-    // 检查可见性
+    // Check visibility
     const size = await element.size();
     const actualVisible = size.width > 0 && size.height > 0;
 
@@ -2215,8 +2215,8 @@ export async function assertElementVisible(
     return {
       passed,
       message: passed
-        ? `断言通过: 元素${visible ? '可见' : '不可见'}`
-        : `断言失败: 期望元素${visible ? '可见' : '不可见'}，实际${actualVisible ? '可见' : '不可见'}`,
+        ? `Assert passed: element ${visible ? 'visible' : 'not visible'}`
+        : `Assert failed: expected element ${visible ? 'visible' : 'not visible'}, actual ${actualVisible ? 'visible' : 'not visible'}`,
       actual: actualVisible,
       expected: visible,
       timestamp: Date.now()
@@ -2226,7 +2226,7 @@ export async function assertElementVisible(
     const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       passed: false,
-      message: `断言执行失败: ${errorMessage}`,
+      message: `Assert execution failed: ${errorMessage}`,
       actual: null,
       expected: visible,
       timestamp: Date.now()
@@ -2235,12 +2235,12 @@ export async function assertElementVisible(
 }
 
 /**
- * 断言元素文本内容
+ * Assert element text content
  *
- * @param page 页面对象
- * @param elementMap 元素映射
- * @param options 断言选项
- * @returns 断言结果
+ * @param page Page object
+ * @param elementMap Element map
+ * @param options Assert options
+ * @returns Assert result
  */
 export async function assertElementText(
   page: any,
@@ -2250,93 +2250,93 @@ export async function assertElementText(
   const { uid, text, textContains, textMatches } = options;
 
   if (!text && !textContains && !textMatches) {
-    throw new Error("必须指定text、textContains或textMatches参数之一");
+    throw new Error("Must specify one of text, textContains or textMatches parameter");
   }
 
   if (!uid) {
-    throw new Error("元素uid是必需的");
+    throw new Error("Element uid is required");
   }
 
   if (!page) {
-    throw new Error("页面对象是必需的");
+    throw new Error("Page object is required");
   }
 
   try {
-    // 通过uid查找元素映射信息
+    // Find element map info by uid
     const mapInfo = elementMap.get(uid);
     if (!mapInfo) {
       return {
         passed: false,
-        message: `断言失败: 找不到uid为 ${uid} 的元素`,
+        message: `Assert failed: cannot find element with uid ${uid}`,
         actual: null,
         expected: text || textContains || textMatches,
         timestamp: Date.now()
       };
     }
 
-    // 使用选择器获取所有匹配元素
+    // Get all matching elements using selector
     const elements = await page.$$(mapInfo.selector);
     if (!elements || elements.length === 0) {
       return {
         passed: false,
-        message: `断言失败: 无法找到选择器为 ${mapInfo.selector} 的元素`,
+        message: `Assert failed: cannot find element with selector ${mapInfo.selector}`,
         actual: null,
         expected: text || textContains || textMatches,
         timestamp: Date.now()
       };
     }
 
-    // 检查索引是否有效
+    // Check if index is valid
     if (mapInfo.index >= elements.length) {
       return {
         passed: false,
-        message: `断言失败: 元素索引 ${mapInfo.index} 超出范围，共找到 ${elements.length} 个元素`,
+        message: `Assert failed: element index ${mapInfo.index} out of range, found ${elements.length} elements`,
         actual: null,
         expected: text || textContains || textMatches,
         timestamp: Date.now()
       };
     }
 
-    // 通过索引获取目标元素
+    // Get target element by index
     const element = elements[mapInfo.index];
     if (!element) {
       return {
         passed: false,
-        message: `断言失败: 无法获取索引为 ${mapInfo.index} 的元素`,
+        message: `Assert failed: cannot get element at index ${mapInfo.index}`,
         actual: null,
         expected: text || textContains || textMatches,
         timestamp: Date.now()
       };
     }
 
-    // 获取元素文本
+    // Get element text
     const actualText = await element.text();
     let passed = false;
     let expectedValue = '';
     let message = '';
 
     if (text) {
-      // 精确匹配
+      // Exact match
       passed = actualText === text;
       expectedValue = text;
       message = passed
-        ? `断言通过: 文本精确匹配`
-        : `断言失败: 期望文本 "${text}"，实际 "${actualText}"`;
+        ? `Assert passed: text exact match`
+        : `Assert failed: expected text "${text}", actual "${actualText}"`;
     } else if (textContains) {
-      // 包含匹配
+      // Contains match
       passed = actualText.includes(textContains);
       expectedValue = textContains;
       message = passed
-        ? `断言通过: 文本包含 "${textContains}"`
-        : `断言失败: 期望包含 "${textContains}"，实际文本 "${actualText}"`;
+        ? `Assert passed: text contains "${textContains}"`
+        : `Assert failed: expected contains "${textContains}", actual text "${actualText}"`;
     } else if (textMatches) {
-      // 正则匹配
+      // Regex match
       const regex = new RegExp(textMatches);
       passed = regex.test(actualText);
       expectedValue = textMatches;
       message = passed
-        ? `断言通过: 文本匹配正则 ${textMatches}`
-        : `断言失败: 期望匹配正则 ${textMatches}，实际文本 "${actualText}"`;
+        ? `Assert passed: text matches regex ${textMatches}`
+        : `Assert failed: expected match regex ${textMatches}, actual text "${actualText}"`;
     }
 
     return {
@@ -2351,7 +2351,7 @@ export async function assertElementText(
     const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       passed: false,
-      message: `断言执行失败: ${errorMessage}`,
+      message: `Assert execution failed: ${errorMessage}`,
       actual: null,
       expected: text || textContains || textMatches,
       timestamp: Date.now()
@@ -2360,12 +2360,12 @@ export async function assertElementText(
 }
 
 /**
- * 断言元素属性
+ * Assert element attribute
  *
- * @param page 页面对象
- * @param elementMap 元素映射
- * @param options 断言选项
- * @returns 断言结果
+ * @param page Page object
+ * @param elementMap Element map
+ * @param options Assert options
+ * @returns Assert result
  */
 export async function assertElementAttribute(
   page: any,
@@ -2375,74 +2375,74 @@ export async function assertElementAttribute(
   const { uid, attribute } = options;
 
   if (!attribute) {
-    throw new Error("必须指定attribute参数");
+    throw new Error("Must specify attribute parameter");
   }
 
   if (!uid) {
-    throw new Error("元素uid是必需的");
+    throw new Error("Element uid is required");
   }
 
   if (!page) {
-    throw new Error("页面对象是必需的");
+    throw new Error("Page object is required");
   }
 
   try {
-    // 通过uid查找元素映射信息
+    // Find element map info by uid
     const mapInfo = elementMap.get(uid);
     if (!mapInfo) {
       return {
         passed: false,
-        message: `断言失败: 找不到uid为 ${uid} 的元素`,
+        message: `Assert failed: cannot find element with uid ${uid}`,
         actual: null,
         expected: attribute.value,
         timestamp: Date.now()
       };
     }
 
-    // 使用选择器获取所有匹配元素
+    // Get all matching elements using selector
     const elements = await page.$$(mapInfo.selector);
     if (!elements || elements.length === 0) {
       return {
         passed: false,
-        message: `断言失败: 无法找到选择器为 ${mapInfo.selector} 的元素`,
+        message: `Assert failed: cannot find element with selector ${mapInfo.selector}`,
         actual: null,
         expected: attribute.value,
         timestamp: Date.now()
       };
     }
 
-    // 检查索引是否有效
+    // Check if index is valid
     if (mapInfo.index >= elements.length) {
       return {
         passed: false,
-        message: `断言失败: 元素索引 ${mapInfo.index} 超出范围，共找到 ${elements.length} 个元素`,
+        message: `Assert failed: element index ${mapInfo.index} out of range, found ${elements.length} elements`,
         actual: null,
         expected: attribute.value,
         timestamp: Date.now()
       };
     }
 
-    // 通过索引获取目标元素
+    // Get target element by index
     const element = elements[mapInfo.index];
     if (!element) {
       return {
         passed: false,
-        message: `断言失败: 无法获取索引为 ${mapInfo.index} 的元素`,
+        message: `Assert failed: cannot get element at index ${mapInfo.index}`,
         actual: null,
         expected: attribute.value,
         timestamp: Date.now()
       };
     }
 
-    // 获取属性值
+    // Get attribute value
     const actualValue = await element.attribute(attribute.key);
     const passed = actualValue === attribute.value;
 
     return {
       passed,
       message: passed
-        ? `断言通过: 属性 ${attribute.key} 值为 "${attribute.value}"`
-        : `断言失败: 期望属性 ${attribute.key} 值为 "${attribute.value}"，实际 "${actualValue}"`,
+        ? `Assert passed: attribute ${attribute.key} value is "${attribute.value}"`
+        : `Assert failed: expected attribute ${attribute.key} value is "${attribute.value}", actual "${actualValue}"`,
       actual: actualValue,
       expected: attribute.value,
       timestamp: Date.now()
@@ -2452,7 +2452,7 @@ export async function assertElementAttribute(
     const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       passed: false,
-      message: `断言执行失败: ${errorMessage}`,
+      message: `Assert execution failed: ${errorMessage}`,
       actual: null,
       expected: attribute.value,
       timestamp: Date.now()
@@ -2461,7 +2461,7 @@ export async function assertElementAttribute(
 }
 
 /**
- * 页面导航选项接口
+ * Page navigation options interface
  */
 export interface NavigateOptions {
   url: string;
@@ -2471,7 +2471,7 @@ export interface NavigateOptions {
 }
 
 /**
- * 返回导航选项接口
+ * Navigate back options interface
  */
 export interface NavigateBackOptions {
   delta?: number;
@@ -2480,7 +2480,7 @@ export interface NavigateBackOptions {
 }
 
 /**
- * Tab切换选项接口
+ * Tab switch options interface
  */
 export interface SwitchTabOptions {
   url: string;
@@ -2490,7 +2490,7 @@ export interface SwitchTabOptions {
 }
 
 /**
- * 页面状态接口
+ * Page state interface
  */
 export interface PageStateOptions {
   expectPath?: string;
@@ -2498,7 +2498,7 @@ export interface PageStateOptions {
 }
 
 /**
- * 页面信息接口
+ * Page info interface
  */
 export interface PageInfo {
   path: string;
@@ -2507,10 +2507,10 @@ export interface PageInfo {
 }
 
 /**
- * 跳转到指定页面
+ * Navigate to specified page
  *
- * @param miniProgram MiniProgram对象
- * @param options 导航选项
+ * @param miniProgram MiniProgram object
+ * @param options Navigation options
  */
 export async function navigateToPage(
   miniProgram: any,
@@ -2519,15 +2519,15 @@ export async function navigateToPage(
   const { url, params, waitForLoad = true, timeout = 10000 } = options;
 
   if (!url) {
-    throw new Error("页面URL是必需的");
+    throw new Error("Page URL is required");
   }
 
   if (!miniProgram) {
-    throw new Error("MiniProgram对象是必需的");
+    throw new Error("MiniProgram object is required");
   }
 
   try {
-    // 构建完整的URL
+    // Build full URL
     let fullUrl = url;
     if (params && Object.keys(params).length > 0) {
       const queryString = Object.entries(params)
@@ -2536,10 +2536,10 @@ export async function navigateToPage(
       fullUrl += (url.includes('?') ? '&' : '?') + queryString;
     }
 
-    // 执行页面跳转
+    // Execute page navigation
     await miniProgram.navigateTo(fullUrl);
 
-    // 等待页面加载完成
+    // Wait for page to load
     if (waitForLoad) {
       const startTime = Date.now();
       while (Date.now() - startTime < timeout) {
@@ -2547,13 +2547,13 @@ export async function navigateToPage(
           const currentPage = await miniProgram.currentPage();
           if (currentPage) {
             const currentPath = await currentPage.path;
-            // 检查是否已经跳转到目标页面
+            // Check if navigated to target page
             if (currentPath.includes(url.split('?')[0])) {
               break;
             }
           }
         } catch (error) {
-          // 继续等待
+          // Continue waiting
         }
         await new Promise(resolve => setTimeout(resolve, 100));
       }
@@ -2561,15 +2561,15 @@ export async function navigateToPage(
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`页面跳转失败: ${errorMessage}`);
+    throw new Error(`Failed to navigate page: ${errorMessage}`);
   }
 }
 
 /**
- * 返回上一页
+ * Navigate back to previous page
  *
- * @param miniProgram MiniProgram对象
- * @param options 返回选项
+ * @param miniProgram MiniProgram object
+ * @param options Navigate back options
  */
 export async function navigateBack(
   miniProgram: any,
@@ -2578,23 +2578,23 @@ export async function navigateBack(
   const { delta = 1, waitForLoad = true, timeout = 5000 } = options;
 
   if (!miniProgram) {
-    throw new Error("MiniProgram对象是必需的");
+    throw new Error("MiniProgram object is required");
   }
 
   try {
-    // 获取当前页面路径（用于验证是否成功返回）
+    // Get current page path (to verify successful navigation back)
     let currentPath = '';
     try {
       const currentPage = await miniProgram.currentPage();
       currentPath = await currentPage.path;
     } catch (error) {
-      // 忽略获取当前路径的错误
+      // Ignore error getting current path
     }
 
-    // 执行返回操作
+    // Execute navigate back
     await miniProgram.navigateBack(delta);
 
-    // 等待页面加载完成
+    // Wait for page to load
     if (waitForLoad) {
       const startTime = Date.now();
       while (Date.now() - startTime < timeout) {
@@ -2602,13 +2602,13 @@ export async function navigateBack(
           const newPage = await miniProgram.currentPage();
           if (newPage) {
             const newPath = await newPage.path;
-            // 检查是否已经成功返回（路径发生变化）
+            // Check if successfully navigated back (path changed)
             if (newPath !== currentPath) {
               break;
             }
           }
         } catch (error) {
-          // 继续等待
+          // Continue waiting
         }
         await new Promise(resolve => setTimeout(resolve, 100));
       }
@@ -2616,15 +2616,15 @@ export async function navigateBack(
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`页面返回失败: ${errorMessage}`);
+    throw new Error(`Failed to navigate back: ${errorMessage}`);
   }
 }
 
 /**
- * 切换到Tab页
+ * Switch to Tab page
  *
- * @param miniProgram MiniProgram对象
- * @param options Tab切换选项
+ * @param miniProgram MiniProgram object
+ * @param options Tab switch options
  */
 export async function switchTab(
   miniProgram: any,
@@ -2633,18 +2633,18 @@ export async function switchTab(
   const { url, waitForLoad = true, timeout = 5000 } = options;
 
   if (!url) {
-    throw new Error("Tab页URL是必需的");
+    throw new Error("Tab page URL is required");
   }
 
   if (!miniProgram) {
-    throw new Error("MiniProgram对象是必需的");
+    throw new Error("MiniProgram object is required");
   }
 
   try {
-    // 执行Tab切换
+    // Execute Tab switch
     await miniProgram.switchTab(url);
 
-    // 等待页面加载完成
+    // Wait for page to load
     if (waitForLoad) {
       const startTime = Date.now();
       while (Date.now() - startTime < timeout) {
@@ -2652,13 +2652,13 @@ export async function switchTab(
           const currentPage = await miniProgram.currentPage();
           if (currentPage) {
             const currentPath = await currentPage.path;
-            // 检查是否已经切换到目标Tab页
+            // Check if switched to target Tab page
             if (currentPath.includes(url.split('?')[0])) {
               break;
             }
           }
         } catch (error) {
-          // 继续等待
+          // Continue waiting
         }
         await new Promise(resolve => setTimeout(resolve, 100));
       }
@@ -2666,44 +2666,44 @@ export async function switchTab(
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`Tab切换失败: ${errorMessage}`);
+    throw new Error(`Failed to switch Tab: ${errorMessage}`);
   }
 }
 
 /**
- * 获取当前页面信息
+ * Get current page info
  *
- * @param miniProgram MiniProgram对象
- * @returns 页面信息
+ * @param miniProgram MiniProgram object
+ * @returns Page info
  */
 export async function getCurrentPageInfo(
   miniProgram: any
 ): Promise<PageInfo> {
   if (!miniProgram) {
-    throw new Error("MiniProgram对象是必需的");
+    throw new Error("MiniProgram object is required");
   }
 
   try {
     const currentPage = await miniProgram.currentPage();
     if (!currentPage) {
-      throw new Error("无法获取当前页面");
+      throw new Error("Unable to get current page");
     }
 
     const path = await currentPage.path;
 
-    // 尝试获取页面标题和查询参数
+    // Try to get page title and query params
     let title: string | undefined;
     let query: Record<string, any> | undefined;
 
     try {
-      // 获取页面数据（如果可用）
+      // Get page data (if available)
       const data = await currentPage.data();
       if (data) {
         title = data.title || data.navigationBarTitleText;
         query = data.query || data.options;
       }
     } catch (error) {
-      // 如果无法获取页面数据，忽略错误
+      // If unable to get page data, ignore error
     }
 
     return {
@@ -2714,15 +2714,15 @@ export async function getCurrentPageInfo(
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`获取页面信息失败: ${errorMessage}`);
+    throw new Error(`Failed to get page info: ${errorMessage}`);
   }
 }
 
 /**
- * 重新启动到指定页面
+ * Re-launch to specified page
  *
- * @param miniProgram MiniProgram对象
- * @param options 导航选项
+ * @param miniProgram MiniProgram object
+ * @param options Navigation options
  */
 export async function reLaunch(
   miniProgram: any,
@@ -2731,15 +2731,15 @@ export async function reLaunch(
   const { url, params, waitForLoad = true, timeout = 10000 } = options;
 
   if (!url) {
-    throw new Error("页面URL是必需的");
+    throw new Error("Page URL is required");
   }
 
   if (!miniProgram) {
-    throw new Error("MiniProgram对象是必需的");
+    throw new Error("MiniProgram object is required");
   }
 
   try {
-    // 构建完整的URL
+    // Build full URL
     let fullUrl = url;
     if (params && Object.keys(params).length > 0) {
       const queryString = Object.entries(params)
@@ -2748,10 +2748,10 @@ export async function reLaunch(
       fullUrl += (url.includes('?') ? '&' : '?') + queryString;
     }
 
-    // 执行重新启动
+    // Execute re-launch
     await miniProgram.reLaunch(fullUrl);
 
-    // 等待页面加载完成
+    // Wait for page to load
     if (waitForLoad) {
       const startTime = Date.now();
       while (Date.now() - startTime < timeout) {
@@ -2759,13 +2759,13 @@ export async function reLaunch(
           const currentPage = await miniProgram.currentPage();
           if (currentPage) {
             const currentPath = await currentPage.path;
-            // 检查是否已经重新启动到目标页面
+            // Check if re-launched to target page
             if (currentPath.includes(url.split('?')[0])) {
               break;
             }
           }
         } catch (error) {
-          // 继续等待
+          // Continue waiting
         }
         await new Promise(resolve => setTimeout(resolve, 100));
       }
@@ -2773,6 +2773,6 @@ export async function reLaunch(
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`重新启动失败: ${errorMessage}`);
+    throw new Error(`Failed to re-launch: ${errorMessage}`);
   }
 }

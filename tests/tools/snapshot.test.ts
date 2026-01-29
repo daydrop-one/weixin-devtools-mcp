@@ -1,6 +1,6 @@
 /**
- * 快照工具单元测试
- * 测试 getPageSnapshotTool handler 的业务逻辑
+ * Snapshot Tool Unit Tests
+ * Test getPageSnapshotTool handler business logic
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -8,7 +8,7 @@ import { getPageSnapshotTool } from '../../src/tools/snapshot.js';
 import { SimpleToolResponse } from '../../src/tools/ToolDefinition.js';
 import type { ToolContext } from '../../src/tools/ToolDefinition.js';
 
-// Mock 快照获取函数
+// Mock snapshot retrieval function
 vi.mock('../../src/tools.js', async () => {
   const actual = await vi.importActual('../../src/tools.js');
   return {

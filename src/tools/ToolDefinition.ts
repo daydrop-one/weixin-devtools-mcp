@@ -1,13 +1,13 @@
 /**
- * 工具定义基础框架
- * 参考 chrome-devtools-mcp 的设计模式
+ * Tool Definition Framework
+ * Based on chrome-devtools-mcp design pattern
  */
 
 import { z } from 'zod'
 import type { ElementMapInfo } from '../tools.js'
 
 /**
- * 工具分类枚举
+ * Tool category enumeration
  */
 export enum ToolCategories {
   CONNECTION = 'Connection',
@@ -17,7 +17,7 @@ export enum ToolCategories {
 }
 
 /**
- * 工具注解接口
+ * Tool annotations interface
  */
 export interface ToolAnnotations {
   audience?: string[];
@@ -25,7 +25,7 @@ export interface ToolAnnotations {
 }
 
 /**
- * Console日志类型（扩展到15+种类型）
+ * Console log type (extended to 15+ types)
  */
 export type ConsoleMessageType =
   | 'log'
@@ -47,22 +47,22 @@ export type ConsoleMessageType =
   | 'verbose';
 
 /**
- * Console消息接口（带 Stable ID）
+ * Console message interface (with Stable ID)
  */
 export interface ConsoleMessage {
-  msgid?: number;  // Stable ID，用于两阶段查询
+  msgid?: number;  // Stable ID for two-phase query
   type: ConsoleMessageType;
-  message?: string;  // 格式化的消息文本
+  message?: string;  // Formatted message text
   args: any[];
   timestamp: string;
   source?: string;
 }
 
 /**
- * Exception异常信息（带 Stable ID）
+ * Exception information (with Stable ID)
  */
 export interface ExceptionMessage {
-  msgid?: number;  // Stable ID，用于两阶段查询
+  msgid?: number;  // Stable ID for two-phase query
   message: string;
   stack?: string;
   timestamp: string;
@@ -70,7 +70,7 @@ export interface ExceptionMessage {
 }
 
 /**
- * 导航会话数据
+ * Navigation session data
  */
 export interface NavigationSession {
   messages: ConsoleMessage[];
@@ -79,33 +79,33 @@ export interface NavigationSession {
 }
 
 /**
- * Console数据存储（支持导航历史）
+ * Console data storage (supports navigation history)
  */
 export interface ConsoleStorage {
-  // 按导航分组存储（最新的在前）
+  // Store by navigation groups (newest first)
   navigations: NavigationSession[];
 
-  // ID 映射表（用于快速查找）
+  // ID mapping table (for quick lookup)
   messageIdMap: Map<number, ConsoleMessage | ExceptionMessage>;
 
-  // 监听状态
+  // Monitoring state
   isMonitoring: boolean;
   startTime: string | null;
 
-  // 配置
-  maxNavigations: number;  // 最多保留的导航会话数，默认3
+  // Configuration
+  maxNavigations: number;  // Maximum navigation sessions to keep, default 3
 
-  // ID 生成器
+  // ID generator
   idGenerator?: () => number;
 }
 
 /**
- * 网络请求类型
+ * Network request type
  */
 export type NetworkRequestType = 'request' | 'uploadFile' | 'downloadFile';
 
 /**
- * 网络请求信息
+ * Network request information
  */
 export interface NetworkRequest {
   id: string;
@@ -114,21 +114,21 @@ export interface NetworkRequest {
   method?: string;
   headers?: Record<string, string>;
   data?: any;
-  params?: any;  // Mpx框架的查询参数
+  params?: any;  // Query parameters for Mpx framework
   statusCode?: number;
   response?: any;
-  responseHeaders?: Record<string, string>;  // 响应头
+  responseHeaders?: Record<string, string>;  // Response headers
   error?: string;
   duration?: number;
   timestamp: string;
-  completedAt?: string;  // 完成时间
+  completedAt?: string;  // Completion time
   success: boolean;
-  pending?: boolean;  // 是否等待响应中
-  source?: string;  // 请求来源（wx.request, getApp().$xfetch等）
+  pending?: boolean;  // Whether waiting for response
+  source?: string;  // Request source (wx.request, getApp().$xfetch, etc.)
 }
 
 /**
- * 网络请求数据存储
+ * Network request data storage
  */
 export interface NetworkStorage {
   requests: NetworkRequest[];
@@ -142,18 +142,18 @@ export interface NetworkStorage {
 }
 
 /**
- * 工具处理器上下文
+ * Tool handler context
  */
 export interface ToolContext {
   /**
-   * 小程序实例 (miniprogram-automator的MiniProgram类型)
-   * 通过 automator.connect() 或 automator.launch() 获得
+   * Mini program instance (MiniProgram type from miniprogram-automator)
+   * Obtained via automator.connect() or automator.launch()
    */
   miniProgram: any;
 
   /**
-   * 当前页面实例 (miniprogram-automator的Page类型)
-   * 通过 miniProgram.currentPage() 获得
+   * Current page instance (Page type from miniprogram-automator)
+   * Obtained via miniProgram.currentPage()
    */
   currentPage: any;
 
@@ -162,24 +162,24 @@ export interface ToolContext {
   networkStorage: NetworkStorage;
 
   /**
-   * 通过 UID 获取元素
-   * 统一处理：连接检查、快照检查、元素查找、索引定位
-   * @param uid 元素的唯一标识符
-   * @returns 元素对象
-   * @throws 如果页面未连接、UID 不存在、元素未找到等
+   * Get element by UID
+   * Unified handling: connection check, snapshot check, element lookup, index positioning
+   * @param uid Element unique identifier
+   * @returns Element object
+   * @throws If page not connected, UID doesn't exist, element not found, etc.
    */
   getElementByUid(uid: string): Promise<any>;
 }
 
 /**
- * 工具请求接口
+ * Tool request interface
  */
 export interface ToolRequest<T = any> {
   params: T;
 }
 
 /**
- * 工具响应接口
+ * Tool response interface
  */
 export interface ToolResponse {
   appendResponseLine(text: string): void;
@@ -188,7 +188,7 @@ export interface ToolResponse {
 }
 
 /**
- * 工具处理器函数类型
+ * Tool handler function type
  */
 export type ToolHandler<TParams> = (
   request: ToolRequest<TParams>,
@@ -197,7 +197,7 @@ export type ToolHandler<TParams> = (
 ) => Promise<void>;
 
 /**
- * 工具定义接口
+ * Tool definition interface
  */
 export interface ToolDefinition {
   name: string;
@@ -208,7 +208,7 @@ export interface ToolDefinition {
 }
 
 /**
- * 定义工具的辅助函数
+ * Helper function to define a tool
  */
 export function defineTool<TSchema extends z.ZodTypeAny>(definition: {
   name: string;
@@ -227,7 +227,7 @@ export function defineTool<TSchema extends z.ZodTypeAny>(definition: {
 }
 
 /**
- * 简单的响应实现类
+ * Simple response implementation class
  */
 export class SimpleToolResponse implements ToolResponse {
   private responseLines: string[] = [];

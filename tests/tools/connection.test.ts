@@ -1,11 +1,11 @@
 /**
- * connection.ts 工具测试
- * 测试MCP工具层的连接管理功能
+ * connection.ts Tool Tests
+ * Test MCP tool layer connection management functionality
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-// Mock tools.ts 中的连接函数
+// Mock connection functions in tools.ts
 vi.mock('../../src/tools.js', () => ({
   connectDevtools: vi.fn(),
   connectDevtoolsEnhanced: vi.fn(),
@@ -22,27 +22,27 @@ vi.mock('../../src/tools.js', () => ({
   }
 }))
 
-// 导入被测试的工具
+// Import tools being tested
 import {
   connectDevtoolsTool,
   connectDevtoolsEnhancedTool,
   getCurrentPageTool
 } from '../../src/tools/connection.js'
 
-// 导入mock的函数用于验证
+// Import mock functions for verification
 import {
   connectDevtools,
   connectDevtoolsEnhanced,
   DevToolsConnectionError
 } from '../../src/tools.js'
 
-describe('connection.ts 工具测试', () => {
-  // 创建测试用的页面对象
+describe('connection.ts Tool Tests', () => {
+  // Create mock page object for testing
   const mockCurrentPage = {
     path: '/pages/home/index'
   }
 
-  // 创建测试用的MiniProgram对象
+  // Create mock MiniProgram object for testing
   const mockMiniProgram = {
     currentPage: vi.fn(),
     on: vi.fn(),
@@ -50,7 +50,7 @@ describe('connection.ts 工具测试', () => {
     evaluate: vi.fn()
   }
 
-  // 创建测试用的上下文对象
+  // Create mock context object for testing
   const mockContext = {
     miniProgram: null as any,
     currentPage: null as any,
@@ -68,7 +68,7 @@ describe('connection.ts 工具测试', () => {
     }
   } as any
 
-  // 创建测试用的请求和响应对象
+  // Create mock request and response objects for testing
   const createMockRequest = (params: any) => ({ params })
   const createMockResponse = () => {
     const lines: string[] = []
@@ -103,8 +103,8 @@ describe('connection.ts 工具测试', () => {
     vi.resetAllMocks()
   })
 
-  describe('connectDevtoolsTool - 传统连接工具', () => {
-    it('应该成功连接到微信开发者工具', async () => {
+  describe('connectDevtoolsTool - Traditional connection tool', () => {
+    it('should successfully connect to WeChat DevTools', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project'
       })
@@ -126,12 +126,12 @@ describe('connection.ts 工具测试', () => {
 
       expect(mockContext.miniProgram).toBe(mockMiniProgram)
       expect(mockContext.currentPage).toBe(mockCurrentPage)
-      expect(response.appendResponseLine).toHaveBeenCalledWith('成功连接到微信开发者工具 (传统模式)')
-      expect(response.appendResponseLine).toHaveBeenCalledWith('项目路径: /path/to/project')
-      expect(response.appendResponseLine).toHaveBeenCalledWith('当前页面: /pages/home/index')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Successfully connected to WeChat DevTools (Traditional mode)')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Project path: /path/to/project')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Current page: /pages/home/index')
     })
 
-    it('应该支持可选的cliPath和port参数', async () => {
+    it('should support optional cliPath and port parameters', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project',
         cliPath: '/custom/cli/path',
@@ -156,7 +156,7 @@ describe('connection.ts 工具测试', () => {
       })
     })
 
-    it('应该传递 autoAudits 参数', async () => {
+    it('should pass autoAudits parameter', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project',
         autoAudits: true
@@ -179,37 +179,37 @@ describe('connection.ts 工具测试', () => {
       })
     })
 
-    it('应该复用已有的活跃连接', async () => {
+    it('should reuse existing active connection', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project'
       })
       const response = createMockResponse()
 
-      // 设置已有连接
+      // Set existing connection
       mockContext.miniProgram = mockMiniProgram
       mockContext.currentPage = mockCurrentPage
 
       await connectDevtoolsTool.handler(request, response, mockContext)
 
-      // 不应该调用 connectDevtools
+      // Should not call connectDevtools
       expect(connectDevtools).not.toHaveBeenCalled()
 
-      // 应该输出复用连接的消息
-      expect(response.appendResponseLine).toHaveBeenCalledWith('✅ 检测到已有活跃连接，复用现有连接')
-      expect(response.appendResponseLine).toHaveBeenCalledWith('项目路径: /path/to/project')
-      expect(response.appendResponseLine).toHaveBeenCalledWith('当前页面: /pages/home/index')
-      expect(response.appendResponseLine).toHaveBeenCalledWith('说明: 跳过重新连接，使用已建立的连接')
+      // Should output message about reusing connection
+      expect(response.appendResponseLine).toHaveBeenCalledWith('✅ Detected existing active connection, reusing current connection')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Project path: /path/to/project')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Current page: /pages/home/index')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Note: Skip reconnection, use established connection')
     })
 
-    it('应该在连接失效时重新连接', async () => {
+    it('should reconnect when connection is invalid', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project'
       })
       const response = createMockResponse()
 
-      // 设置已有连接，但 currentPage 会失败
+      // Set existing connection, but currentPage will fail
       mockContext.miniProgram = mockMiniProgram
-      mockMiniProgram.currentPage.mockRejectedValueOnce(new Error('连接已失效'))
+      mockMiniProgram.currentPage.mockRejectedValueOnce(new Error('Connection expired'))
 
       const connectResult = {
         miniProgram: mockMiniProgram,
@@ -221,13 +221,13 @@ describe('connection.ts 工具测试', () => {
 
       await connectDevtoolsTool.handler(request, response, mockContext)
 
-      // 应该重新连接
+      // Should reconnect
       expect(connectDevtools).toHaveBeenCalled()
       expect(mockContext.miniProgram).toBe(mockMiniProgram)
       expect(mockContext.currentPage).toBe(mockCurrentPage)
     })
 
-    it('应该自动启动console监听', async () => {
+    it('should automatically start console monitoring', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project'
       })
@@ -248,10 +248,10 @@ describe('connection.ts 工具测试', () => {
       expect(mockMiniProgram.on).toHaveBeenCalledWith('console', expect.any(Function))
       expect(mockMiniProgram.on).toHaveBeenCalledWith('exception', expect.any(Function))
       expect(mockContext.consoleStorage.isMonitoring).toBe(true)
-      expect(response.appendResponseLine).toHaveBeenCalledWith('Console监听已自动启动')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Console monitoring has been automatically started')
     })
 
-    it('应该自动启动网络监听', async () => {
+    it('should automatically start network monitoring', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project'
       })
@@ -269,26 +269,26 @@ describe('connection.ts 工具测试', () => {
 
       expect(mockMiniProgram.evaluate).toHaveBeenCalled()
       expect(mockContext.networkStorage.isMonitoring).toBe(true)
-      expect(response.appendResponseLine).toHaveBeenCalledWith('网络监听已自动启动（增强型拦截）')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Network monitoring has been automatically started (Enhanced interception)')
     })
 
-    it('应该处理连接失败', async () => {
+    it('should handle connection failure', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project'
       })
       const response = createMockResponse()
 
-      vi.mocked(connectDevtools).mockRejectedValue(new Error('连接失败'))
+      vi.mocked(connectDevtools).mockRejectedValue(new Error('Connection failed'))
 
       await expect(connectDevtoolsTool.handler(request, response, mockContext))
-        .rejects.toThrow('连接失败')
+        .rejects.toThrow('Connection failed')
 
-      expect(response.appendResponseLine).toHaveBeenCalledWith('连接失败: 连接失败')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Connection failed: Connection failed')
     })
   })
 
-  describe('connectDevtoolsEnhancedTool - 增强连接工具', () => {
-    it('应该成功智能连接到微信开发者工具', async () => {
+  describe('connectDevtoolsEnhancedTool - Enhanced connection tool', () => {
+    it('should successfully intelligently connect to WeChat DevTools', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project',
         mode: 'auto',
@@ -325,15 +325,15 @@ describe('connection.ts 工具测试', () => {
 
       expect(mockContext.miniProgram).toBe(mockMiniProgram)
       expect(mockContext.currentPage).toBe(mockCurrentPage)
-      expect(response.appendResponseLine).toHaveBeenCalledWith('✅ 智能连接成功')
-      expect(response.appendResponseLine).toHaveBeenCalledWith('项目路径: /path/to/project')
-      expect(response.appendResponseLine).toHaveBeenCalledWith('当前页面: /pages/home/index')
-      expect(response.appendResponseLine).toHaveBeenCalledWith('连接模式: launch')
-      expect(response.appendResponseLine).toHaveBeenCalledWith('启动耗时: 1234ms')
-      expect(response.appendResponseLine).toHaveBeenCalledWith('健康状态: healthy')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('✅ Smart connection successful')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Project path: /path/to/project')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Current page: /pages/home/index')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Connection mode: launch')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Startup time: 1234ms')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Health status: healthy')
     })
 
-    it('应该支持所有增强参数', async () => {
+    it('should support all enhanced parameters', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project',
         mode: 'connect',
@@ -377,10 +377,10 @@ describe('connection.ts 工具测试', () => {
         autoAudits: undefined
       })
 
-      expect(response.appendResponseLine).toHaveBeenCalledWith('进程信息: PID=12345, Port=9440')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Process info: PID=12345, Port=9440')
     })
 
-    it('应该传递 autoAudits 参数到增强连接', async () => {
+    it('should pass autoAudits parameter to enhanced connection', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project',
         mode: 'launch',
@@ -415,7 +415,7 @@ describe('connection.ts 工具测试', () => {
       })
     })
 
-    it('应该复用已有的活跃连接', async () => {
+    it('should reuse existing active connection', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project',
         mode: 'auto',
@@ -423,24 +423,24 @@ describe('connection.ts 工具测试', () => {
       })
       const response = createMockResponse()
 
-      // 设置已有连接
+      // Set existing connection
       mockContext.miniProgram = mockMiniProgram
       mockContext.currentPage = mockCurrentPage
 
       await connectDevtoolsEnhancedTool.handler(request, response, mockContext)
 
-      // 不应该调用 connectDevtoolsEnhanced
+      // Should not call connectDevtoolsEnhanced
       expect(connectDevtoolsEnhanced).not.toHaveBeenCalled()
 
-      // 应该输出复用连接的消息
-      expect(response.appendResponseLine).toHaveBeenCalledWith('✅ 检测到已有活跃连接，复用现有连接')
-      expect(response.appendResponseLine).toHaveBeenCalledWith('项目路径: /path/to/project')
-      expect(response.appendResponseLine).toHaveBeenCalledWith('当前页面: /pages/home/index')
-      expect(response.appendResponseLine).toHaveBeenCalledWith('说明: 跳过重新连接，使用已建立的连接')
-      expect(response.appendResponseLine).toHaveBeenCalledWith('提示: 如需强制重新连接，请先关闭微信开发者工具')
+      // Should output message about reusing connection
+      expect(response.appendResponseLine).toHaveBeenCalledWith('✅ Detected existing active connection, reusing current connection')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Project path: /path/to/project')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Current page: /pages/home/index')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Note: Skip reconnection, use established connection')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Tip: To force reconnection, please close WeChat DevTools first')
     })
 
-    it('应该在verbose模式下输出连接失效提示', async () => {
+    it('should output connection failure notice in verbose mode', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project',
         mode: 'auto',
@@ -448,9 +448,9 @@ describe('connection.ts 工具测试', () => {
       })
       const response = createMockResponse()
 
-      // 设置已有连接，但 currentPage 会失败
+      // Set existing connection, but currentPage will fail
       mockContext.miniProgram = mockMiniProgram
-      mockMiniProgram.currentPage.mockRejectedValueOnce(new Error('连接已失效'))
+      mockMiniProgram.currentPage.mockRejectedValueOnce(new Error('Connection expired'))
 
       const connectResult = {
         miniProgram: mockMiniProgram,
@@ -465,14 +465,14 @@ describe('connection.ts 工具测试', () => {
 
       await connectDevtoolsEnhancedTool.handler(request, response, mockContext)
 
-      // 应该输出失效提示
-      expect(response.appendResponseLine).toHaveBeenCalledWith('检测到已有连接但已失效，准备重新连接...')
+      // Should output expiration notice
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Detected existing connection but it has expired, preparing to reconnect...')
 
-      // 应该重新连接
+      // Should reconnect
       expect(connectDevtoolsEnhanced).toHaveBeenCalled()
     })
 
-    it('应该正确格式化WebSocket超时错误', async () => {
+    it('should correctly format WebSocket timeout error', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project',
         mode: 'connect',
@@ -483,9 +483,9 @@ describe('connection.ts 工具测试', () => {
       const response = createMockResponse()
 
       const error = new DevToolsConnectionError(
-        'WebSocket服务启动超时，端口: 9420，已等待: 5209ms',
+        'WebSocket service startup timeout, port: 9420, waited: 5209ms',
         'startup',
-        new Error('WebSocket服务启动超时，端口: 9420，已等待: 5209ms'),
+        new Error('WebSocket service startup timeout, port: 9420, waited: 5209ms'),
         { timestamp: new Date().toISOString() }
       )
 
@@ -494,28 +494,28 @@ describe('connection.ts 工具测试', () => {
       await expect(connectDevtoolsEnhancedTool.handler(request, response, mockContext))
         .rejects.toThrow()
 
-      // 验证错误消息格式
-      expect(response.appendResponseLine).toHaveBeenCalledWith('❗ startup阶段失败: WebSocket服务启动超时，端口: 9420，已等待: 5209ms')
-      expect(response.appendResponseLine).toHaveBeenCalledWith('原始错误: WebSocket服务启动超时，端口: 9420，已等待: 5209ms')
-      expect(response.appendResponseLine).toHaveBeenCalledWith(expect.stringContaining('详细信息:'))
+      // Verify error message format
+      expect(response.appendResponseLine).toHaveBeenCalledWith('❗ startup phase failed: WebSocket service startup timeout, port: 9420, waited: 5209ms')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Original error: WebSocket service startup timeout, port: 9420, waited: 5209ms')
+      expect(response.appendResponseLine).toHaveBeenCalledWith(expect.stringContaining('Details:'))
     })
 
-    it('应该处理普通错误', async () => {
+    it('should handle generic errors', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project',
         mode: 'auto'
       })
       const response = createMockResponse()
 
-      vi.mocked(connectDevtoolsEnhanced).mockRejectedValue(new Error('连接失败'))
+      vi.mocked(connectDevtoolsEnhanced).mockRejectedValue(new Error('Connection failed'))
 
       await expect(connectDevtoolsEnhancedTool.handler(request, response, mockContext))
-        .rejects.toThrow('连接失败')
+        .rejects.toThrow('Connection failed')
 
-      expect(response.appendResponseLine).toHaveBeenCalledWith('连接失败: 连接失败')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Connection failed: Connection failed')
     })
 
-    it('应该自动启动console和网络监听', async () => {
+    it('should automatically start console and network monitoring', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project',
         mode: 'auto'
@@ -535,23 +535,23 @@ describe('connection.ts 工具测试', () => {
 
       await connectDevtoolsEnhancedTool.handler(request, response, mockContext)
 
-      // 验证console监听
+      // Verify console monitoring
       expect(mockMiniProgram.removeAllListeners).toHaveBeenCalledWith('console')
       expect(mockMiniProgram.removeAllListeners).toHaveBeenCalledWith('exception')
       expect(mockMiniProgram.on).toHaveBeenCalledWith('console', expect.any(Function))
       expect(mockMiniProgram.on).toHaveBeenCalledWith('exception', expect.any(Function))
       expect(mockContext.consoleStorage.isMonitoring).toBe(true)
-      expect(response.appendResponseLine).toHaveBeenCalledWith('Console监听已自动启动')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Console monitoring has been automatically started')
 
-      // 验证网络监听
+      // Verify network monitoring
       expect(mockMiniProgram.evaluate).toHaveBeenCalled()
       expect(mockContext.networkStorage.isMonitoring).toBe(true)
-      expect(response.appendResponseLine).toHaveBeenCalledWith('网络监听已自动启动（增强型拦截）')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Network monitoring has been automatically started (Enhanced interception)')
     })
   })
 
-  describe('getCurrentPageTool - 获取当前页面', () => {
-    it('应该成功获取当前页面信息', async () => {
+  describe('getCurrentPageTool - Get current page', () => {
+    it('should successfully get current page information', async () => {
       const request = createMockRequest({})
       const response = createMockResponse()
 
@@ -561,33 +561,33 @@ describe('connection.ts 工具测试', () => {
 
       expect(mockMiniProgram.currentPage).toHaveBeenCalled()
       expect(mockContext.currentPage).toBe(mockCurrentPage)
-      expect(response.appendResponseLine).toHaveBeenCalledWith('当前页面: /pages/home/index')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Current page: /pages/home/index')
     })
 
-    it('应该要求先连接到开发者工具', async () => {
+    it('should require connection to DevTools first', async () => {
       const request = createMockRequest({})
       const response = createMockResponse()
 
       await expect(getCurrentPageTool.handler(request, response, mockContext))
-        .rejects.toThrow('请先连接到微信开发者工具')
+        .rejects.toThrow('Please connect to WeChat DevTools first')
     })
 
-    it('应该处理获取页面失败', async () => {
+    it('should handle page retrieval failure', async () => {
       const request = createMockRequest({})
       const response = createMockResponse()
 
       mockContext.miniProgram = mockMiniProgram
-      mockMiniProgram.currentPage.mockRejectedValue(new Error('获取失败'))
+      mockMiniProgram.currentPage.mockRejectedValue(new Error('Retrieval failed'))
 
       await expect(getCurrentPageTool.handler(request, response, mockContext))
-        .rejects.toThrow('获取失败')
+        .rejects.toThrow('Retrieval failed')
 
-      expect(response.appendResponseLine).toHaveBeenCalledWith('获取当前页面失败: 获取失败')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Failed to get current page: Retrieval failed')
     })
   })
 
-  describe('错误处理测试', () => {
-    it('应该处理console监听启动失败', async () => {
+  describe('Error handling tests', () => {
+    it('should handle console monitoring startup failure', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project'
       })
@@ -601,15 +601,15 @@ describe('connection.ts 工具测试', () => {
 
       vi.mocked(connectDevtools).mockResolvedValue(connectResult)
       mockMiniProgram.on.mockImplementation(() => {
-        throw new Error('监听失败')
+        throw new Error('Listener startup failed')
       })
 
       await connectDevtoolsTool.handler(request, response, mockContext)
 
-      expect(response.appendResponseLine).toHaveBeenCalledWith('警告: Console监听启动失败 - 监听失败')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Warning: Console monitoring startup failed - Listener startup failed')
     })
 
-    it('应该处理网络监听启动失败', async () => {
+    it('should handle network monitoring startup failure', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project'
       })
@@ -622,16 +622,16 @@ describe('connection.ts 工具测试', () => {
       }
 
       vi.mocked(connectDevtools).mockResolvedValue(connectResult)
-      mockMiniProgram.evaluate.mockRejectedValue(new Error('注入失败'))
+      mockMiniProgram.evaluate.mockRejectedValue(new Error('Injection failed'))
 
       await connectDevtoolsTool.handler(request, response, mockContext)
 
-      expect(response.appendResponseLine).toHaveBeenCalledWith('警告: 网络监听启动失败 - 注入失败')
+      expect(response.appendResponseLine).toHaveBeenCalledWith('Warning: Network monitoring startup failed - Injection failed')
     })
   })
 
-  describe('上下文状态管理测试', () => {
-    it('应该清空elementMap在新连接时', async () => {
+  describe('Context state management tests', () => {
+    it('should clear elementMap on new connection', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project'
       })
@@ -643,7 +643,7 @@ describe('connection.ts 工具测试', () => {
         pagePath: '/pages/home/index'
       }
 
-      // 设置一些旧的元素映射
+      // Set some old element mappings
       mockContext.elementMap.set('old-uid', 'old-selector')
 
       vi.mocked(connectDevtools).mockResolvedValue(connectResult)
@@ -653,7 +653,7 @@ describe('connection.ts 工具测试', () => {
       expect(mockContext.elementMap.size).toBe(0)
     })
 
-    it('应该正确更新上下文状态', async () => {
+    it('should correctly update context state', async () => {
       const request = createMockRequest({
         projectPath: '/path/to/project',
         mode: 'auto'

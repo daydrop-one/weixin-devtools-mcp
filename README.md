@@ -1,66 +1,66 @@
-# 微信开发者工具自动化 MCP 服务器
+# WeChat DevTools Automation MCP Server
 
-> 强大的微信小程序自动化测试解决方案，基于 Model Context Protocol 实现
+> Powerful WeChat Mini Program automation testing solution based on Model Context Protocol
 
 [![Version](https://img.shields.io/badge/version-0.3.3-blue.svg)](https://github.com/yourusername/weixin-devtools-mcp)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
 
-## ✨ 核心特性
+## ✨ Key Features
 
-- 🚀 **40个专业工具** - 覆盖连接、查询、交互、断言、导航、调试等完整测试场景
-- 🤖 **智能连接** - 支持 auto/launch/connect 三种模式，自动端口检测，无需手动配置
-- 🔍 **自动网络监控** - 连接时自动启动，实时拦截 wx.request/uploadFile/downloadFile
-- ✅ **完整断言体系** - 5类断言工具，验证元素存在、可见性、文本、属性、状态
-- 📸 **丰富调试能力** - 支持页面截图、Console 监听、网络请求追踪、诊断工具
-- 🏗️ **模块化架构** - 基于 chrome-devtools-mcp 架构模式，易于扩展和维护
-- 🧪 **全面测试覆盖** - 单元测试 + 集成测试，测试覆盖率 >80%
+- 🚀 **40 Professional Tools** - Comprehensive testing coverage for connection, query, interaction, assertion, navigation, debugging, and more
+- 🤖 **Smart Connection** - Supports auto/launch/connect modes with automatic port detection, no manual configuration needed
+- 🔍 **Automatic Network Monitoring** - Auto-starts on connection, real-time interception of wx.request/uploadFile/downloadFile
+- ✅ **Complete Assertion System** - 5 types of assertion tools to verify element existence, visibility, text, attributes, and state
+- 📸 **Rich Debugging Capabilities** - Page screenshots, Console monitoring, network request tracking, diagnostic tools
+- 🏗️ **Modular Architecture** - Based on chrome-devtools-mcp architecture pattern, easy to extend and maintain
+- 🧪 **Comprehensive Test Coverage** - Unit tests + integration tests, >80% test coverage
 
-## 📦 安装
+## 📦 Installation
 
-### 方式一：使用 npx（推荐）
+### Method 1: Use npx (Recommended)
 
-**无需安装，直接使用**，npx 会自动下载并运行最新版本：
+**No installation required, use directly** - npx will automatically download and run the latest version:
 
 ```bash
-# 无需执行任何安装命令
-# 直接在 Claude Desktop 配置中使用即可
+# No installation command needed
+# Just use it directly in Claude Desktop configuration
 ```
 
-### 方式二：全局安装
+### Method 2: Global Installation
 
-如果需要频繁使用或离线使用，可以全局安装：
+If you need frequent or offline use, install globally:
 
 ```bash
 npm install -g weixin-devtools-mcp
 ```
 
-### 方式三：开发者安装（从源码）
+### Method 3: Developer Installation (From Source)
 
-如果需要修改源代码或参与开发：
+If you need to modify source code or contribute to development:
 
 ```bash
-# 克隆项目
+# Clone the project
 git clone https://github.com/yourusername/weixin-devtools-mcp.git
 cd weixin-devtools-mcp
 
-# 安装依赖
+# Install dependencies
 npm install
 
-# 构建项目
+# Build the project
 npm run build
 ```
 
-## ⚙️ 配置
+## ⚙️ Configuration
 
-在 Claude Desktop 配置文件中添加 MCP 服务器：
+Add the MCP server to Claude Desktop configuration file:
 
 **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 **Windows**: `%APPDATA%/Claude/claude_desktop_config.json`
 
-### 配置方式一：使用 npx（推荐）
+### Configuration Method 1: Use npx (Recommended)
 
-**优点**：无需安装，自动使用最新版本
+**Advantage**: No installation needed, automatically uses latest version
 
 ```json
 {
@@ -73,9 +73,9 @@ npm run build
 }
 ```
 
-### 配置方式二：全局安装后使用
+### Configuration Method 2: After Global Installation
 
-如果已全局安装，可以直接使用命令名：
+If already globally installed, use the command name directly:
 
 ```json
 {
@@ -87,9 +87,9 @@ npm run build
 }
 ```
 
-### 配置方式三：开发者本地路径
+### Configuration Method 3: Developer Local Path
 
-如果从源码安装，使用绝对路径：
+If installed from source, use absolute path:
 
 ```json
 {
@@ -101,297 +101,297 @@ npm run build
 }
 ```
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 第一个自动化测试
+### Your First Automation Test
 
 ```typescript
-// 1. 智能连接到微信开发者工具（自动检测端口）
+// 1. Smart connection to WeChat DevTools (auto port detection)
 connect_devtools_enhanced({
   projectPath: "/path/to/your/miniprogram",
   mode: "auto",
   verbose: true
 })
 
-// 2. 查找登录按钮
+// 2. Find login button
 $({ selector: "button.login-btn" })
 
-// 3. 点击登录按钮
+// 3. Click login button
 click({ uid: "button.login-btn" })
 
-// 4. 等待登录成功
+// 4. Wait for successful login
 waitFor({ selector: ".welcome-message", timeout: 5000 })
 
-// 5. 验证登录成功
-assert_text({ uid: ".welcome-message", text: "欢迎回来" })
+// 5. Verify login success
+assert_text({ uid: ".welcome-message", text: "Welcome back" })
 
-// 6. 获取页面截图
+// 6. Take page screenshot
 screenshot({ path: "/tmp/login-success.png" })
 ```
 
-## 🛠️ 功能概览
+## 🛠️ Features Overview
 
-项目提供 **40个工具**，分为 8 大类别：
+The project provides **40 tools** organized into 8 major categories:
 
-| 类别 | 工具数 | 主要功能 |
+| Category | Tool Count | Main Functions |
 |------|--------|----------|
-| **连接管理** | 3个 | 智能连接、传统连接、获取当前页面 |
-| **页面查询** | 3个 | CSS选择器查找、条件等待、页面快照 |
-| **交互操作** | 7个 | 点击、输入、获取值、表单控件、选择器、开关、滑块 |
-| **断言验证** | 5个 | 存在性、可见性、文本、属性、状态断言 |
-| **页面导航** | 6个 | 跳转、返回、Tab切换、重启、重定向、页面信息 |
-| **Console监控** | 6个 | 监听控制、两阶段查询（list/get详情）、日志获取、清空 |
-| **网络监控** | 5个 | 请求拦截、监听控制、请求获取、清空记录、拦截器诊断 |
-| **诊断工具** | 5个 | 连接诊断、环境检查、元素调试、拦截器诊断 |
+| **Connection Management** | 3 tools | Smart connection, traditional connection, get current page |
+| **Page Query** | 3 tools | CSS selector search, conditional wait, page snapshot |
+| **Interaction Operations** | 7 tools | Click, input, get value, form controls, picker, switch, slider |
+| **Assertion Validation** | 5 tools | Existence, visibility, text, attribute, state assertions |
+| **Page Navigation** | 6 tools | Navigate, back, tab switch, relaunch, redirect, page info |
+| **Console Monitoring** | 6 tools | Monitor control, two-phase query (list/get details), log retrieval, clear |
+| **Network Monitoring** | 5 tools | Request interception, monitor control, request retrieval, clear records, interceptor diagnostics |
+| **Diagnostic Tools** | 5 tools | Connection diagnosis, environment check, element debugging, interceptor diagnostics |
 
-### 工具详细列表
+### Detailed Tool List
 
 <details>
-<summary><b>连接管理（3个工具）</b></summary>
+<summary><b>Connection Management (3 tools)</b></summary>
 
-- `connect_devtools` - 传统连接方式（兼容性）
-- `connect_devtools_enhanced` - 智能连接，支持三种模式，自动端口检测（推荐）
-- `get_current_page` - 获取当前活动页面信息
+- `connect_devtools` - Traditional connection method (compatibility)
+- `connect_devtools_enhanced` - Smart connection, supports three modes, auto port detection (recommended)
+- `get_current_page` - Get current active page information
 
 </details>
 
 <details>
-<summary><b>页面查询和快照（3个工具）</b></summary>
+<summary><b>Page Query and Snapshot (3 tools)</b></summary>
 
-- `$` - 通过CSS选择器查找元素，返回详细信息
-- `waitFor` - 等待条件满足（时间/元素出现/消失/文本匹配）
-- `get_page_snapshot` - 获取完整页面快照和所有元素UID
-
-</details>
-
-<details>
-<summary><b>交互操作（7个工具）</b></summary>
-
-- `click` - 点击元素（支持单击/双击）
-- `input_text` - 向input/textarea输入文本
-- `get_value` - 获取元素的值或文本内容
-- `set_form_control` - 设置表单控件的值
-- `select_picker` - 选择picker控件选项
-- `toggle_switch` - 切换switch开关状态
-- `set_slider` - 设置slider滑块值
+- `$` - Find elements by CSS selector, return detailed information
+- `waitFor` - Wait for conditions to be met (time/element appear/disappear/text match)
+- `get_page_snapshot` - Get complete page snapshot and all element UIDs
 
 </details>
 
 <details>
-<summary><b>断言验证（5个工具）</b></summary>
+<summary><b>Interaction Operations (7 tools)</b></summary>
 
-- `assert_exists` - 断言元素存在或不存在
-- `assert_visible` - 断言元素可见或不可见
-- `assert_text` - 断言元素文本内容（精确/包含/正则）
-- `assert_attribute` - 断言元素属性值
-- `assert_state` - 断言元素状态（选中/启用/聚焦/可见）
-
-</details>
-
-<details>
-<summary><b>页面导航（6个工具）</b></summary>
-
-- `navigate_to` - 跳转到指定页面
-- `navigate_back` - 返回上一页
-- `switch_tab` - 切换到指定Tab页
-- `relaunch` - 重启小程序并跳转到指定页面
-- `redirect_to` - 关闭当前页并跳转
-- `get_page_info` - 获取当前页面详细信息
+- `click` - Click element (supports single/double click)
+- `input_text` - Input text into input/textarea
+- `get_value` - Get element's value or text content
+- `set_form_control` - Set form control value
+- `select_picker` - Select picker control option
+- `toggle_switch` - Toggle switch state
+- `set_slider` - Set slider value
 
 </details>
 
 <details>
-<summary><b>Console监控（6个工具）</b></summary>
+<summary><b>Assertion Validation (5 tools)</b></summary>
 
-- `start_console_monitoring` - 开始监听console和exception
-- `stop_console_monitoring` - 停止console监听
-- `list_console_messages` - 列表查询console消息（短格式，token优化）
-- `get_console_message` - 根据msgid获取消息详情（完整格式）
-- `get_console` - 获取收集的console消息（传统方式）
-- `clear_console` - 清空console缓存
-
-</details>
-
-<details>
-<summary><b>调试工具（1个工具）</b></summary>
-
-- `screenshot` - 页面截图（返回base64或保存文件）
+- `assert_exists` - Assert element exists or does not exist
+- `assert_visible` - Assert element is visible or not visible
+- `assert_text` - Assert element text content (exact/contains/regex)
+- `assert_attribute` - Assert element attribute value
+- `assert_state` - Assert element state (checked/enabled/focused/visible)
 
 </details>
 
 <details>
-<summary><b>网络监控（5个工具）</b></summary>
+<summary><b>Page Navigation (6 tools)</b></summary>
 
-- `start_network_monitoring` - 开始监听网络请求
-- `stop_network_monitoring` - 停止网络监听
-- `get_network_requests` - 获取拦截的网络请求（支持过滤）
-- `clear_network_requests` - 清空网络请求记录
-- `diagnose_interceptor` - 诊断网络拦截器状态
+- `navigate_to` - Navigate to specified page
+- `navigate_back` - Go back to previous page
+- `switch_tab` - Switch to specified tab page
+- `relaunch` - Restart mini program and navigate to specified page
+- `redirect_to` - Close current page and navigate
+- `get_page_info` - Get current page detailed information
 
 </details>
 
 <details>
-<summary><b>诊断工具（3个工具）</b></summary>
+<summary><b>Console Monitoring (6 tools)</b></summary>
 
-- `diagnose_connection` - 诊断连接问题，检查配置和环境
-- `check_environment` - 检查自动化环境配置
-- `debug_page_elements` - 调试页面元素获取问题
+- `start_console_monitoring` - Start monitoring console and exceptions
+- `stop_console_monitoring` - Stop console monitoring
+- `list_console_messages` - List console messages (short format, token optimized)
+- `get_console_message` - Get message details by msgid (full format)
+- `get_console` - Get collected console messages (traditional method)
+- `clear_console` - Clear console cache
 
 </details>
 
-## 💡 使用示例
+<details>
+<summary><b>Debug Tools (1 tool)</b></summary>
 
-### 示例 1：用户登录流程
+- `screenshot` - Page screenshot (return base64 or save file)
+
+</details>
+
+<details>
+<summary><b>Network Monitoring (5 tools)</b></summary>
+
+- `start_network_monitoring` - Start monitoring network requests
+- `stop_network_monitoring` - Stop network monitoring
+- `get_network_requests` - Get intercepted network requests (supports filtering)
+- `clear_network_requests` - Clear network request records
+- `diagnose_interceptor` - Diagnose network interceptor status
+
+</details>
+
+<details>
+<summary><b>Diagnostic Tools (3 tools)</b></summary>
+
+- `diagnose_connection` - Diagnose connection issues, check configuration and environment
+- `check_environment` - Check automation environment configuration
+- `debug_page_elements` - Debug page element retrieval issues
+
+</details>
+
+## 💡 Usage Examples
+
+### Example 1: User Login Flow
 
 ```typescript
-// 连接到开发者工具
+// Connect to developer tools
 connect_devtools_enhanced({
   projectPath: "/path/to/miniprogram",
   mode: "auto"
 })
 
-// 输入用户名
+// Input username
 $({ selector: "input#username" })
 input_text({ uid: "input#username", text: "testuser" })
 
-// 输入密码
+// Input password
 $({ selector: "input#password" })
 input_text({ uid: "input#password", text: "password123" })
 
-// 点击登录按钮
+// Click login button
 $({ selector: "button.login" })
 click({ uid: "button.login" })
 
-// 等待登录成功
+// Wait for successful login
 waitFor({ selector: ".welcome", timeout: 5000 })
 
-// 验证欢迎消息
-assert_text({ uid: ".welcome", textContains: "欢迎" })
+// Verify welcome message
+assert_text({ uid: ".welcome", textContains: "Welcome" })
 
-// 检查网络请求
+// Check network requests
 get_network_requests({ urlPattern: "/api/login", successOnly: true })
 ```
 
-### 示例 2：表单填写和提交
+### Example 2: Form Filling and Submission
 
 ```typescript
-// 填写文本输入框
-input_text({ uid: "input#name", text: "张三" })
-input_text({ uid: "input#email", text: "zhangsan@example.com" })
+// Fill text input fields
+input_text({ uid: "input#name", text: "John Doe" })
+input_text({ uid: "input#email", text: "john@example.com" })
 
-// 选择下拉框
-select_picker({ uid: "picker#city", value: "北京" })
+// Select dropdown
+select_picker({ uid: "picker#city", value: "New York" })
 
-// 切换开关
+// Toggle switch
 toggle_switch({ uid: "switch#agree", checked: true })
 
-// 设置滑块
+// Set slider
 set_slider({ uid: "slider#age", value: 25 })
 
-// 提交表单
+// Submit form
 click({ uid: "button.submit" })
 
-// 等待提交成功
+// Wait for successful submission
 waitFor({ selector: ".success-toast", timeout: 3000 })
 
-// 验证提交结果
+// Verify submission result
 assert_visible({ uid: ".success-toast", visible: true })
-assert_text({ uid: ".success-toast", text: "提交成功" })
+assert_text({ uid: ".success-toast", text: "Submitted successfully" })
 
-// 截图保存结果
+// Screenshot to save result
 screenshot({ path: "/tmp/form-submit-success.png" })
 ```
 
-## 📚 文档
+## 📚 Documentation
 
-- [📖 完整集成指南](docs/integration-guide.md) - 详细的安装和配置步骤
-- [🔧 页面工具API](docs/page-tools.md) - 页面查询和等待工具详细文档
-- [✨ 最佳实践](docs/best-practices.md) - 编写高质量自动化测试的建议
-- [🧪 测试指南](docs/testing-guide.md) - 单元测试和集成测试说明
-- [🏗️ 模块化架构](docs/modular-architecture.md) - 项目架构设计文档
-- [📝 使用示例](docs/examples/) - 更多实际使用场景示例
+- [📖 Complete Integration Guide](docs/integration-guide.md) - Detailed installation and configuration steps
+- [🔧 Page Tools API](docs/page-tools.md) - Detailed documentation for page query and wait tools
+- [✨ Best Practices](docs/best-practices.md) - Recommendations for writing high-quality automation tests
+- [🧪 Testing Guide](docs/testing-guide.md) - Unit testing and integration testing instructions
+- [🏗️ Modular Architecture](docs/modular-architecture.md) - Project architecture design documentation
+- [📝 Usage Examples](docs/examples/) - More real-world usage scenario examples
 
-## 🔧 开发指南
+## 🔧 Development Guide
 
-### 构建和测试
+### Build and Test
 
-项目采用分层测试架构，分为协议测试、工具测试和集成测试：
+The project uses a layered testing architecture with protocol tests, tool tests, and integration tests:
 
 ```bash
-# 开发模式（监听文件变化）
+# Development mode (watch for file changes)
 npm run watch
 
-# 运行单元测试（224个测试：协议 + 工具 + 工具类）
+# Run unit tests (224 tests: protocol + tools + utilities)
 npm test
 
-# 分类运行单元测试
-npm run test:protocol      # 协议层测试（19个）
-npm run test:tools         # 工具逻辑测试（196个）
+# Run unit tests by category
+npm run test:protocol      # Protocol layer tests (19 tests)
+npm run test:tools         # Tool logic tests (196 tests)
 
-# 运行集成测试（需要微信开发者工具，46个测试）
+# Run integration tests (requires WeChat DevTools, 46 tests)
 npm run test:integration
 
-# 运行所有测试（单元 + 集成）
+# Run all tests (unit + integration)
 npm run test:all
 
-# 生成测试覆盖率报告
+# Generate test coverage report
 npm run test:coverage
 
-# 使用 MCP Inspector 调试
+# Debug with MCP Inspector
 npm run inspector
 ```
 
-### 添加新工具
+### Adding New Tools
 
-1. 在 `src/tools/` 下创建或修改工具模块
-2. 使用 `ToolDefinition` 框架定义工具
-3. 在 `src/tools/index.ts` 中导出工具
-4. 编写单元测试（`tests/tools/*.test.ts` 或 `tests/protocol/*.test.ts`）
-5. 编写集成测试（`tests/integration/*.integration.test.ts`）
-6. 更新文档
+1. Create or modify tool module in `src/tools/`
+2. Define tool using `ToolDefinition` framework
+3. Export tool in `src/tools/index.ts`
+4. Write unit tests (`tests/tools/*.test.ts` or `tests/protocol/*.test.ts`)
+5. Write integration tests (`tests/integration/*.integration.test.ts`)
+6. Update documentation
 
-详细开发指南请参考 [CLAUDE.md](CLAUDE.md)
+For detailed development guide, see [CLAUDE.md](CLAUDE.md)
 
-### 测试架构
+### Testing Architecture
 
-项目采用三层测试架构（参考 chrome-devtools-mcp）：
+The project uses a three-layer testing architecture (inspired by chrome-devtools-mcp):
 
-- **协议层测试** (`tests/protocol/`) - 测试 MCP 服务器协议实现
-- **工具逻辑测试** (`tests/tools/`) - 直接测试工具 handler，无需服务器
-- **集成测试** (`tests/integration/`) - 端到端测试，需要真实环境
+- **Protocol Layer Tests** (`tests/protocol/`) - Test MCP server protocol implementation
+- **Tool Logic Tests** (`tests/tools/`) - Test tool handlers directly, no server required
+- **Integration Tests** (`tests/integration/`) - End-to-end tests, requires real environment
 
-## 📋 系统要求
+## 📋 System Requirements
 
 - **Node.js** >= 16.0.0
-- **微信开发者工具** 已安装并开启自动化功能
-- **操作系统** macOS / Windows
-- **Claude Desktop** 用于运行 MCP 服务器
+- **WeChat DevTools** Installed with automation features enabled
+- **Operating System** macOS / Windows
+- **Claude Desktop** For running MCP server
 
-## 🤝 贡献指南
+## 🤝 Contributing
 
-欢迎贡献代码、报告问题或提出建议！
+Contributions, bug reports, and suggestions are welcome!
 
-1. Fork 本项目
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
+1. Fork this project
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## 📄 许可证
+## 📄 License
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details
 
-## 🙏 致谢
+## 🙏 Acknowledgments
 
 - [Model Context Protocol](https://github.com/modelcontextprotocol) - MCP SDK
-- [miniprogram-automator](https://www.npmjs.com/package/miniprogram-automator) - 微信小程序自动化 SDK
-- [chrome-devtools-mcp](https://github.com/tinybirdco/chrome-devtools-mcp) - 架构参考
+- [miniprogram-automator](https://www.npmjs.com/package/miniprogram-automator) - WeChat Mini Program automation SDK
+- [chrome-devtools-mcp](https://github.com/tinybirdco/chrome-devtools-mcp) - Architecture reference
 
-## 📞 联系方式
+## 📞 Contact
 
-- 问题反馈：[GitHub Issues](https://github.com/yourusername/weixin-devtools-mcp/issues)
-- 文档网站：[项目文档](docs/)
+- Issue Reports: [GitHub Issues](https://github.com/yourusername/weixin-devtools-mcp/issues)
+- Documentation: [Project Docs](docs/)
 
 ---
 
-⭐ 如果这个项目对你有帮助，欢迎给个 Star！
+⭐ If this project helps you, please give it a Star!

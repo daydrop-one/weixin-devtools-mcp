@@ -1,13 +1,13 @@
 /**
- * Console和Exception监听工具（P0+P1优化版）
- * 实现对微信开发者工具console输出和异常的监听和获取
+ * Console and Exception Monitoring Tools (P0+P1 Optimized Version)
+ * Implements monitoring and retrieval of console output and exceptions from WeChat DevTools
  *
- * 新增功能：
- * - Stable ID 系统支持两阶段查询
- * - 真正的分页支持（pageSize + pageIdx）
- * - 扩展类型过滤（15+种类型）
- * - 导航历史保留（最多3次）
- * - 向后兼容的 API
+ * New Features:
+ * - Stable ID system supports two-phase queries
+ * - True pagination support (pageSize + pageIdx)
+ * - Extended type filtering (15+ types)
+ * - Navigation history preservation (up to 3 sessions)
+ * - Backward-compatible API
  */
 
 import { z } from 'zod';
@@ -29,7 +29,7 @@ import {
 import { createIdGenerator } from '../utils/idGenerator.js';
 
 /**
- * 初始化 ConsoleStorage（新结构）
+ * Initialize ConsoleStorage (new structure)
  */
 function initializeConsoleStorage(context: any): void {
   if (!context.consoleStorage.navigations) {
@@ -45,13 +45,13 @@ function initializeConsoleStorage(context: any): void {
 }
 
 /**
- * 启动Console监听工具（重构版）
+ * Start Console Monitoring Tool (refactored version)
  */
 export const startConsoleMonitoringTool = defineTool({
   name: 'start_console_monitoring',
-  description: '启动对微信开发者工具console和exception的监听',
+  description: 'Start monitoring console and exception events from WeChat DevTools',
   schema: z.object({
-    clearExisting: z.boolean().optional().default(false).describe('是否清除已有的日志记录'),
+    clearExisting: z.boolean().optional().default(false).describe('Whether to clear existing log records'),
   }),
   annotations: {
     audience: ['developers'],
@@ -60,13 +60,13 @@ export const startConsoleMonitoringTool = defineTool({
     const { clearExisting } = request.params;
 
     if (!context.miniProgram) {
-      throw new Error('请先连接到微信开发者工具');
+      throw new Error('Please connect to WeChat DevTools first');
     }
 
-    // 初始化存储结构
+    // Initialize storage structure
     initializeConsoleStorage(context);
 
-    // 清除现有日志
+    // Clear existing logs
     if (clearExisting) {
       context.consoleStorage.navigations = [
         { messages: [], exceptions: [], timestamp: new Date().toISOString() }
@@ -74,19 +74,19 @@ export const startConsoleMonitoringTool = defineTool({
       context.consoleStorage.messageIdMap.clear();
     }
 
-    // 确保有 ID 生成器
+    // Ensure ID generator exists
     if (!context.consoleStorage.idGenerator) {
       context.consoleStorage.idGenerator = createIdGenerator();
     }
 
     const idGenerator = context.consoleStorage.idGenerator;
 
-    // 设置监听状态
+    // Set monitoring state
     context.consoleStorage.isMonitoring = true;
     context.consoleStorage.startTime = new Date().toISOString();
 
     try {
-      // 监听console事件
+      // Listen to console events
       context.miniProgram.on('console', (msg: any) => {
         const msgid = idGenerator();
         const consoleMessage: ConsoleMessage = {
@@ -98,17 +98,17 @@ export const startConsoleMonitoringTool = defineTool({
           source: 'miniprogram',
         };
 
-        // 添加到当前导航会话
+        // Add to current navigation session
         const currentNav = context.consoleStorage.navigations[0];
         currentNav.messages.push(consoleMessage);
 
-        // 添加到 ID 映射
+        // Add to ID mapping
         context.consoleStorage.messageIdMap.set(msgid, consoleMessage);
 
         console.log(`[Console ${msg.type}] msgid=${msgid}:`, msg.args);
       });
 
-      // 监听exception事件
+      // Listen to exception events
       context.miniProgram.on('exception', (err: any) => {
         const msgid = idGenerator();
         const exceptionMessage: ExceptionMessage = {
@@ -119,61 +119,61 @@ export const startConsoleMonitoringTool = defineTool({
           source: 'miniprogram',
         };
 
-        // 添加到当前导航会话
+        // Add to current navigation session
         const currentNav = context.consoleStorage.navigations[0];
         currentNav.exceptions.push(exceptionMessage);
 
-        // 添加到 ID 映射
+        // Add to ID mapping
         context.consoleStorage.messageIdMap.set(msgid, exceptionMessage);
 
         console.log(`[Exception] msgid=${msgid}:`, err.message, err.stack);
       });
 
-      // TODO: 未来可添加导航事件监听
+      // TODO: Future navigation event listener
       // context.miniProgram.on('pageNavigate', () => {
-      //   // 创建新的导航会话
+      //   // Create new navigation session
       //   context.consoleStorage.navigations.unshift({
       //     messages: [],
       //     exceptions: [],
       //     timestamp: new Date().toISOString()
       //   });
-      //   // 限制保留数量
+      //   // Limit preserved count
       //   context.consoleStorage.navigations.splice(context.consoleStorage.maxNavigations);
       // });
 
-      response.appendResponseLine('Console监听已启动');
-      response.appendResponseLine(`监听开始时间: ${context.consoleStorage.startTime}`);
-      response.appendResponseLine(`清除历史记录: ${clearExisting ? '是' : '否'}`);
-      response.appendResponseLine(`Stable ID 系统: 已启用`);
-      response.appendResponseLine(`导航历史保留: 最多 ${context.consoleStorage.maxNavigations} 次`);
+      response.appendResponseLine('Console monitoring started');
+      response.appendResponseLine(`Monitoring start time: ${context.consoleStorage.startTime}`);
+      response.appendResponseLine(`Clear history: ${clearExisting ? 'Yes' : 'No'}`);
+      response.appendResponseLine(`Stable ID system: Enabled`);
+      response.appendResponseLine(`Navigation history preservation: Up to ${context.consoleStorage.maxNavigations} sessions`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`启动Console监听失败: ${errorMessage}`);
+      throw new Error(`Failed to start console monitoring: ${errorMessage}`);
     }
   },
 });
 
 /**
- * 停止Console监听工具
+ * Stop Console Monitoring Tool
  */
 export const stopConsoleMonitoringTool = defineTool({
   name: 'stop_console_monitoring',
-  description: '停止对微信开发者工具console和exception的监听',
+  description: 'Stop monitoring console and exception events from WeChat DevTools',
   schema: z.object({}),
   annotations: {
     audience: ['developers'],
   },
   handler: async (request, response, context) => {
     if (!context.miniProgram) {
-      throw new Error('请先连接到微信开发者工具');
+      throw new Error('Please connect to WeChat DevTools first');
     }
 
     try {
-      // 移除所有监听器
+      // Remove all listeners
       context.miniProgram.removeAllListeners('console');
       context.miniProgram.removeAllListeners('exception');
 
-      // 统计消息数量
+      // Count messages
       const storage = context.consoleStorage;
       let totalMessages = 0;
       let totalExceptions = 0;
@@ -185,49 +185,49 @@ export const stopConsoleMonitoringTool = defineTool({
         }
       }
 
-      // 更新监听状态
+      // Update monitoring state
       const wasMonitoring = context.consoleStorage.isMonitoring;
       context.consoleStorage.isMonitoring = false;
 
-      response.appendResponseLine(wasMonitoring ? 'Console监听已停止' : 'Console监听未在运行');
-      response.appendResponseLine(`监听期间收集到 ${totalMessages} 条console日志`);
-      response.appendResponseLine(`监听期间收集到 ${totalExceptions} 条exception记录`);
-      response.appendResponseLine(`ID 映射表大小: ${storage.messageIdMap?.size || 0}`);
+      response.appendResponseLine(wasMonitoring ? 'Console monitoring stopped' : 'Console monitoring was not running');
+      response.appendResponseLine(`Collected ${totalMessages} console log(s) during monitoring`);
+      response.appendResponseLine(`Collected ${totalExceptions} exception record(s) during monitoring`);
+      response.appendResponseLine(`ID mapping table size: ${storage.messageIdMap?.size || 0}`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`停止Console监听失败: ${errorMessage}`);
+      throw new Error(`Failed to stop console monitoring: ${errorMessage}`);
     }
   },
 });
 
 /**
- * 列表查询 Console 消息工具（P0新增）
+ * List Console Messages Tool (P0 new addition)
  */
 export const listConsoleMessagesTool = defineTool({
   name: 'list_console_messages',
-  description: '列表查询console消息（简短格式，支持分页和过滤）。用于快速浏览大量消息，获取 msgid 后可用 get_console_message 查看详情。',
+  description: 'List console messages in short format with pagination and filtering support. Use this to quickly browse large volumes of messages. After getting msgid values, use get_console_message to view details.',
   schema: z.object({
     pageSize: z
       .number()
       .int()
       .positive()
       .optional()
-      .describe('每页消息数量，默认为50'),
+      .describe('Number of messages per page, defaults to 50'),
     pageIdx: z
       .number()
       .int()
       .min(0)
       .optional()
-      .describe('页码（从0开始），默认为0'),
+      .describe('Page number (starting from 0), defaults to 0'),
     types: z
       .array(z.enum(FILTERABLE_MESSAGE_TYPES as any))
       .optional()
-      .describe('过滤消息类型，支持15+种类型，不指定则返回所有类型'),
+      .describe('Filter message types, supports 15+ types, returns all types if not specified'),
     includePreservedMessages: z
       .boolean()
       .default(false)
       .optional()
-      .describe('是否包含历史导航的消息（最近3次导航）'),
+      .describe('Whether to include messages from historical navigations (up to 3 recent navigations)'),
   }),
   annotations: {
     audience: ['developers'],
@@ -241,12 +241,12 @@ export const listConsoleMessagesTool = defineTool({
     } = request.params;
 
     if (!context.consoleStorage) {
-      throw new Error('Console存储未初始化');
+      throw new Error('Console storage not initialized');
     }
 
     initializeConsoleStorage(context);
 
-    // 收集消息
+    // Collect messages
     let allMessages: Array<ConsoleMessageData | ExceptionMessageData> = [];
 
     const navigationsToInclude = includePreservedMessages
@@ -254,7 +254,7 @@ export const listConsoleMessagesTool = defineTool({
       : [context.consoleStorage.navigations[0]];
 
     for (const nav of navigationsToInclude) {
-      // 添加 console 消息
+      // Add console messages
       for (const msg of nav.messages) {
         if (msg.msgid !== undefined) {
           allMessages.push({
@@ -268,7 +268,7 @@ export const listConsoleMessagesTool = defineTool({
         }
       }
 
-      // 添加 exception 消息
+      // Add exception messages
       for (const exc of nav.exceptions) {
         if (exc.msgid !== undefined) {
           allMessages.push({
@@ -283,29 +283,29 @@ export const listConsoleMessagesTool = defineTool({
       }
     }
 
-    // 类型过滤
+    // Type filtering
     if (types && types.length > 0) {
       const normalizedTypes = new Set(types);
       allMessages = allMessages.filter(msg => normalizedTypes.has(msg.type as any));
     }
 
-    // 按时间排序（最新的在前）
+    // Sort by time (newest first)
     allMessages.sort((a, b) => {
       const timeA = new Date(a.timestamp || 0).getTime();
       const timeB = new Date(b.timestamp || 0).getTime();
       return timeB - timeA;
     });
 
-    // 分页
+    // Pagination
     const total = allMessages.length;
     const start = pageIdx * pageSize;
     const end = Math.min(start + pageSize, total);
     const pagedMessages = allMessages.slice(start, end);
 
-    // 格式化输出
+    // Format output
     response.appendResponseLine('## Console Messages (List View)');
-    response.appendResponseLine(`监听状态: ${context.consoleStorage.isMonitoring ? '运行中' : '已停止'}`);
-    response.appendResponseLine(`监听开始时间: ${context.consoleStorage.startTime || '未设置'}`);
+    response.appendResponseLine(`Monitoring status: ${context.consoleStorage.isMonitoring ? 'Running' : 'Stopped'}`);
+    response.appendResponseLine(`Monitoring start time: ${context.consoleStorage.startTime || 'Not set'}`);
     response.appendResponseLine('');
 
     const paginationInfo = formatPaginationInfo(total, pageSize, pageIdx);
@@ -325,18 +325,18 @@ export const listConsoleMessagesTool = defineTool({
     }
 
     response.appendResponseLine('');
-    response.appendResponseLine('💡 提示: 使用 get_console_message 工具按 msgid 查看详细信息');
+    response.appendResponseLine('💡 Tip: Use get_console_message tool with msgid to view detailed information');
   },
 });
 
 /**
- * 详情查询 Console 消息工具（P0新增）
+ * Get Console Message Details Tool (P0 new addition)
  */
 export const getConsoleMessageTool = defineTool({
   name: 'get_console_message',
-  description: '通过 msgid 获取单条console消息的详细信息（完整的参数和堆栈跟踪）',
+  description: 'Retrieve detailed information for a single console message by msgid (full arguments and stack traces)',
   schema: z.object({
-    msgid: z.number().positive().describe('消息的 Stable ID（从 list_console_messages 获取）'),
+    msgid: z.number().positive().describe('Stable ID of the message (obtained from list_console_messages)'),
   }),
   annotations: {
     audience: ['developers'],
@@ -345,23 +345,23 @@ export const getConsoleMessageTool = defineTool({
     const { msgid } = request.params;
 
     if (!context.consoleStorage) {
-      throw new Error('Console存储未初始化');
+      throw new Error('Console storage not initialized');
     }
 
     initializeConsoleStorage(context);
 
-    // 从 ID 映射表查找
+    // Look up from ID mapping
     const message = context.consoleStorage.messageIdMap.get(msgid);
 
     if (!message) {
-      throw new Error(`未找到 msgid=${msgid} 的消息。请使用 list_console_messages 查看可用的消息。`);
+      throw new Error(`Message with msgid=${msgid} not found. Please use list_console_messages to view available messages.`);
     }
 
-    // 构造详细数据
+    // Construct detailed data
     let detailData: ConsoleMessageData | ExceptionMessageData;
 
     if ('stack' in message) {
-      // Exception 消息
+      // Exception message
       detailData = {
         msgid: message.msgid!,
         type: 'exception',
@@ -371,7 +371,7 @@ export const getConsoleMessageTool = defineTool({
         source: message.source,
       };
     } else {
-      // Console 消息（类型收窄）
+      // Console message (type narrowing)
       const consoleMsg = message as ConsoleMessage;
       detailData = {
         msgid: consoleMsg.msgid!,
@@ -383,7 +383,7 @@ export const getConsoleMessageTool = defineTool({
       };
     }
 
-    // 格式化输出
+    // Format output
     response.appendResponseLine('## Console Message (Detail View)');
     response.appendResponseLine('');
     response.appendResponseLine(formatConsoleEventVerbose(detailData));
@@ -391,15 +391,15 @@ export const getConsoleMessageTool = defineTool({
 });
 
 /**
- * 获取Console日志工具（向后兼容）
+ * Get Console Logs Tool (backward compatible)
  */
 export const getConsoleTool = defineTool({
   name: 'get_console',
-  description: '获取收集到的console日志和exception异常信息（兼容旧版API，建议使用 list_console_messages）',
+  description: 'Retrieve collected console logs and exception information (compatible with legacy API, recommended to use list_console_messages)',
   schema: z.object({
-    type: z.enum(['all', 'console', 'exception']).optional().default('all').describe('获取的数据类型'),
-    limit: z.number().optional().default(50).describe('限制返回条数'),
-    since: z.string().optional().describe('获取指定时间之后的记录，格式：ISO 8601'),
+    type: z.enum(['all', 'console', 'exception']).optional().default('all').describe('Type of data to retrieve'),
+    limit: z.number().optional().default(50).describe('Limit the number of returned records'),
+    since: z.string().optional().describe('Retrieve records after the specified time, format: ISO 8601'),
   }),
   annotations: {
     audience: ['developers'],
@@ -408,20 +408,20 @@ export const getConsoleTool = defineTool({
     const { type, limit, since } = request.params;
 
     if (!context.consoleStorage) {
-      throw new Error('Console存储未初始化');
+      throw new Error('Console storage not initialized');
     }
 
     initializeConsoleStorage(context);
 
     const sinceTime = since ? new Date(since) : null;
 
-    // 过滤函数
+    // Filter function
     const filterByTime = (item: ConsoleMessage | ExceptionMessage) => {
       if (!sinceTime) return true;
       return new Date(item.timestamp) >= sinceTime;
     };
 
-    // 收集消息（向后兼容：只从当前导航获取）
+    // Collect messages (backward compatible: only from current navigation)
     const currentNav = context.consoleStorage.navigations[0];
     let consoleMessages: ConsoleMessage[] = [];
     let exceptionMessages: ExceptionMessage[] = [];
@@ -434,45 +434,45 @@ export const getConsoleTool = defineTool({
       exceptionMessages = currentNav.exceptions.filter(filterByTime).slice(-limit);
     }
 
-    // 生成响应（保持旧版格式）
-    response.appendResponseLine('=== Console数据获取结果 ===');
-    response.appendResponseLine(`监听状态: ${context.consoleStorage.isMonitoring ? '运行中' : '已停止'}`);
-    response.appendResponseLine(`监听开始时间: ${context.consoleStorage.startTime || '未设置'}`);
+    // Generate response (maintain legacy format)
+    response.appendResponseLine('=== Console Data Retrieval Result ===');
+    response.appendResponseLine(`Monitoring status: ${context.consoleStorage.isMonitoring ? 'Running' : 'Stopped'}`);
+    response.appendResponseLine(`Monitoring start time: ${context.consoleStorage.startTime || 'Not set'}`);
 
     if (consoleMessages.length > 0) {
-      response.appendResponseLine(`\n--- Console日志 (${consoleMessages.length} 条) ---`);
+      response.appendResponseLine(`\n--- Console Logs (${consoleMessages.length} record(s)) ---`);
       consoleMessages.forEach((msg, index) => {
         const msgidInfo = msg.msgid ? ` [msgid=${msg.msgid}]` : '';
         response.appendResponseLine(`${index + 1}. [${msg.type}] ${msg.timestamp}${msgidInfo}`);
-        response.appendResponseLine(`   内容: ${msg.message || JSON.stringify(msg.args)}`);
+        response.appendResponseLine(`   Content: ${msg.message || JSON.stringify(msg.args)}`);
       });
     }
 
     if (exceptionMessages.length > 0) {
-      response.appendResponseLine(`\n--- Exception异常 (${exceptionMessages.length} 条) ---`);
+      response.appendResponseLine(`\n--- Exceptions (${exceptionMessages.length} record(s)) ---`);
       exceptionMessages.forEach((err, index) => {
         const msgidInfo = err.msgid ? ` [msgid=${err.msgid}]` : '';
         response.appendResponseLine(`${index + 1}. ${err.timestamp}${msgidInfo}`);
-        response.appendResponseLine(`   消息: ${err.message}`);
+        response.appendResponseLine(`   Message: ${err.message}`);
         if (err.stack) {
-          response.appendResponseLine(`   堆栈: ${err.stack.split('\n')[0]}...`);
+          response.appendResponseLine(`   Stack: ${err.stack.split('\n')[0]}...`);
         }
       });
     }
 
-    response.appendResponseLine('\n=== 获取完成 ===');
-    response.appendResponseLine('💡 提示: 建议使用 list_console_messages 和 get_console_message 工具以获得更好的体验');
+    response.appendResponseLine('\n=== Retrieval Complete ===');
+    response.appendResponseLine('💡 Tip: Recommended to use list_console_messages and get_console_message tools for a better experience');
   },
 });
 
 /**
- * 清除Console日志工具
+ * Clear Console Logs Tool
  */
 export const clearConsoleTool = defineTool({
   name: 'clear_console',
-  description: '清除已收集的console日志和exception异常信息',
+  description: 'Clear collected console logs and exception information',
   schema: z.object({
-    type: z.enum(['all', 'console', 'exception']).optional().default('all').describe('清除的数据类型'),
+    type: z.enum(['all', 'console', 'exception']).optional().default('all').describe('Type of data to clear'),
   }),
   annotations: {
     audience: ['developers'],
@@ -481,7 +481,7 @@ export const clearConsoleTool = defineTool({
     const { type } = request.params;
 
     if (!context.consoleStorage) {
-      throw new Error('Console存储未初始化');
+      throw new Error('Console storage not initialized');
     }
 
     initializeConsoleStorage(context);
@@ -489,12 +489,12 @@ export const clearConsoleTool = defineTool({
     let clearedConsole = 0;
     let clearedException = 0;
 
-    // 根据类型清除数据
+    // Clear data based on type
     const currentNav = context.consoleStorage.navigations[0];
 
     if (type === 'all' || type === 'console') {
       clearedConsole = currentNav.messages.length;
-      // 从 ID 映射中移除
+      // Remove from ID mapping
       for (const msg of currentNav.messages) {
         if (msg.msgid !== undefined) {
           context.consoleStorage.messageIdMap.delete(msg.msgid);
@@ -505,7 +505,7 @@ export const clearConsoleTool = defineTool({
 
     if (type === 'all' || type === 'exception') {
       clearedException = currentNav.exceptions.length;
-      // 从 ID 映射中移除
+      // Remove from ID mapping
       for (const exc of currentNav.exceptions) {
         if (exc.msgid !== undefined) {
           context.consoleStorage.messageIdMap.delete(exc.msgid);
@@ -514,9 +514,9 @@ export const clearConsoleTool = defineTool({
       currentNav.exceptions = [];
     }
 
-    response.appendResponseLine('Console数据清除完成');
-    response.appendResponseLine(`清除Console日志: ${clearedConsole} 条`);
-    response.appendResponseLine(`清除Exception异常: ${clearedException} 条`);
-    response.appendResponseLine(`剩余 ID 映射: ${context.consoleStorage.messageIdMap.size}`);
+    response.appendResponseLine('Console data cleared');
+    response.appendResponseLine(`Cleared console logs: ${clearedConsole} record(s)`);
+    response.appendResponseLine(`Cleared exceptions: ${clearedException} record(s)`);
+    response.appendResponseLine(`Remaining ID mappings: ${context.consoleStorage.messageIdMap.size}`);
   },
 });

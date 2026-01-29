@@ -1,6 +1,6 @@
 /**
- * 断言验证工具
- * 提供各种元素状态和内容的断言验证功能
+ * Assertion Validation Tools
+ * Provides various assertion validation functions for element states and content
  */
 
 import { z } from 'zod';
@@ -17,16 +17,16 @@ import {
 } from '../tools.js';
 
 /**
- * 断言元素存在
+ * Assert element exists
  */
 export const assertExistsTool = defineTool({
   name: 'assert_exists',
-  description: '断言元素存在或不存在',
+  description: 'Assert element exists or does not exist',
   schema: z.object({
-    selector: z.string().optional().describe('CSS选择器'),
-    uid: z.string().optional().describe('元素UID'),
-    shouldExist: z.boolean().describe('期望存在状态，true为存在，false为不存在'),
-    timeout: z.number().optional().default(5000).describe('等待超时时间(毫秒)，默认5000ms'),
+    selector: z.string().optional().describe('CSS selector'),
+    uid: z.string().optional().describe('Element UID'),
+    shouldExist: z.boolean().describe('Expected existence state, true for exists, false for does not exist'),
+    timeout: z.number().optional().default(5000).describe('Wait timeout in milliseconds, default 5000ms'),
   }),
   annotations: {
     audience: ['developers'],
@@ -35,11 +35,11 @@ export const assertExistsTool = defineTool({
     const { selector, uid, shouldExist, timeout } = request.params;
 
     if (!selector && !uid) {
-      throw new Error('必须提供selector或uid参数');
+      throw new Error('Must provide selector or uid parameter');
     }
 
     if (!context.currentPage) {
-      throw new Error('请先获取当前页面');
+      throw new Error('Please get current page first');
     }
 
     try {
@@ -52,34 +52,34 @@ export const assertExistsTool = defineTool({
 
       const result: AssertResult = await assertElementExists(context.currentPage, options);
 
-      // 根据断言结果返回信息
-      response.appendResponseLine(`断言结果: ${result.passed ? '通过' : '失败'}`);
-      response.appendResponseLine(`消息: ${result.message}`);
-      response.appendResponseLine(`期望: ${result.expected}`);
-      response.appendResponseLine(`实际: ${result.actual}`);
-      response.appendResponseLine(`时间戳: ${new Date(result.timestamp).toISOString()}`);
+      // Return information based on assertion result
+      response.appendResponseLine(`Assertion result: ${result.passed ? 'Passed' : 'Failed'}`);
+      response.appendResponseLine(`Message: ${result.message}`);
+      response.appendResponseLine(`Expected: ${result.expected}`);
+      response.appendResponseLine(`Actual: ${result.actual}`);
+      response.appendResponseLine(`Timestamp: ${new Date(result.timestamp).toISOString()}`);
 
       if (!result.passed) {
-        throw new Error(`断言失败: ${result.message}`);
+        throw new Error(`Assertion failed: ${result.message}`);
       }
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`断言执行失败: ${errorMessage}`);
+      response.appendResponseLine(`Assertion execution failed: ${errorMessage}`);
       throw error;
     }
   },
 });
 
 /**
- * 断言元素可见性
+ * Assert element visibility
  */
 export const assertVisibleTool = defineTool({
   name: 'assert_visible',
-  description: '断言元素可见或不可见',
+  description: 'Assert element is visible or not visible',
   schema: z.object({
-    uid: z.string().describe('元素UID'),
-    visible: z.boolean().describe('期望可见状态，true为可见，false为不可见'),
+    uid: z.string().describe('Element UID'),
+    visible: z.boolean().describe('Expected visibility state, true for visible, false for not visible'),
   }),
   annotations: {
     audience: ['developers'],
@@ -88,7 +88,7 @@ export const assertVisibleTool = defineTool({
     const { uid, visible } = request.params;
 
     if (!context.currentPage) {
-      throw new Error('请先获取当前页面');
+      throw new Error('Please get current page first');
     }
 
     try {
@@ -99,36 +99,36 @@ export const assertVisibleTool = defineTool({
         options
       );
 
-      // 根据断言结果返回信息
-      response.appendResponseLine(`断言结果: ${result.passed ? '通过' : '失败'}`);
-      response.appendResponseLine(`消息: ${result.message}`);
-      response.appendResponseLine(`期望: ${result.expected ? '可见' : '不可见'}`);
-      response.appendResponseLine(`实际: ${result.actual ? '可见' : '不可见'}`);
-      response.appendResponseLine(`时间戳: ${new Date(result.timestamp).toISOString()}`);
+      // Return information based on assertion result
+      response.appendResponseLine(`Assertion result: ${result.passed ? 'Passed' : 'Failed'}`);
+      response.appendResponseLine(`Message: ${result.message}`);
+      response.appendResponseLine(`Expected: ${result.expected ? 'Visible' : 'Not visible'}`);
+      response.appendResponseLine(`Actual: ${result.actual ? 'Visible' : 'Not visible'}`);
+      response.appendResponseLine(`Timestamp: ${new Date(result.timestamp).toISOString()}`);
 
       if (!result.passed) {
-        throw new Error(`断言失败: ${result.message}`);
+        throw new Error(`Assertion failed: ${result.message}`);
       }
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`断言执行失败: ${errorMessage}`);
+      response.appendResponseLine(`Assertion execution failed: ${errorMessage}`);
       throw error;
     }
   },
 });
 
 /**
- * 断言元素文本内容
+ * Assert element text content
  */
 export const assertTextTool = defineTool({
   name: 'assert_text',
-  description: '断言元素文本内容',
+  description: 'Assert element text content',
   schema: z.object({
-    uid: z.string().describe('元素UID'),
-    text: z.string().optional().describe('精确匹配的文本'),
-    textContains: z.string().optional().describe('包含的文本'),
-    textMatches: z.string().optional().describe('正则表达式匹配'),
+    uid: z.string().describe('Element UID'),
+    text: z.string().optional().describe('Exact match text'),
+    textContains: z.string().optional().describe('Text to contain'),
+    textMatches: z.string().optional().describe('Regular expression match'),
   }),
   annotations: {
     audience: ['developers'],
@@ -137,11 +137,11 @@ export const assertTextTool = defineTool({
     const { uid, text, textContains, textMatches } = request.params;
 
     if (!text && !textContains && !textMatches) {
-      throw new Error('必须指定text、textContains或textMatches参数之一');
+      throw new Error('Must specify one of text, textContains or textMatches parameters');
     }
 
     if (!context.currentPage) {
-      throw new Error('请先获取当前页面');
+      throw new Error('Please get current page first');
     }
 
     try {
@@ -158,35 +158,35 @@ export const assertTextTool = defineTool({
         options
       );
 
-      // 根据断言结果返回信息
-      response.appendResponseLine(`断言结果: ${result.passed ? '通过' : '失败'}`);
-      response.appendResponseLine(`消息: ${result.message}`);
-      response.appendResponseLine(`期望: ${result.expected}`);
-      response.appendResponseLine(`实际: ${result.actual}`);
-      response.appendResponseLine(`时间戳: ${new Date(result.timestamp).toISOString()}`);
+      // Return information based on assertion result
+      response.appendResponseLine(`Assertion result: ${result.passed ? 'Passed' : 'Failed'}`);
+      response.appendResponseLine(`Message: ${result.message}`);
+      response.appendResponseLine(`Expected: ${result.expected}`);
+      response.appendResponseLine(`Actual: ${result.actual}`);
+      response.appendResponseLine(`Timestamp: ${new Date(result.timestamp).toISOString()}`);
 
       if (!result.passed) {
-        throw new Error(`断言失败: ${result.message}`);
+        throw new Error(`Assertion failed: ${result.message}`);
       }
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`断言执行失败: ${errorMessage}`);
+      response.appendResponseLine(`Assertion execution failed: ${errorMessage}`);
       throw error;
     }
   },
 });
 
 /**
- * 断言元素属性
+ * Assert element attribute
  */
 export const assertAttributeTool = defineTool({
   name: 'assert_attribute',
-  description: '断言元素属性值',
+  description: 'Assert element attribute value',
   schema: z.object({
-    uid: z.string().describe('元素UID'),
-    attributeKey: z.string().describe('属性名'),
-    attributeValue: z.string().describe('期望的属性值'),
+    uid: z.string().describe('Element UID'),
+    attributeKey: z.string().describe('Attribute name'),
+    attributeValue: z.string().describe('Expected attribute value'),
   }),
   annotations: {
     audience: ['developers'],
@@ -195,7 +195,7 @@ export const assertAttributeTool = defineTool({
     const { uid, attributeKey, attributeValue } = request.params;
 
     if (!context.currentPage) {
-      throw new Error('请先获取当前页面');
+      throw new Error('Please get current page first');
     }
 
     try {
@@ -213,37 +213,37 @@ export const assertAttributeTool = defineTool({
         options
       );
 
-      // 根据断言结果返回信息
-      response.appendResponseLine(`断言结果: ${result.passed ? '通过' : '失败'}`);
-      response.appendResponseLine(`消息: ${result.message}`);
-      response.appendResponseLine(`期望: ${result.expected}`);
-      response.appendResponseLine(`实际: ${result.actual}`);
-      response.appendResponseLine(`时间戳: ${new Date(result.timestamp).toISOString()}`);
+      // Return information based on assertion result
+      response.appendResponseLine(`Assertion result: ${result.passed ? 'Passed' : 'Failed'}`);
+      response.appendResponseLine(`Message: ${result.message}`);
+      response.appendResponseLine(`Expected: ${result.expected}`);
+      response.appendResponseLine(`Actual: ${result.actual}`);
+      response.appendResponseLine(`Timestamp: ${new Date(result.timestamp).toISOString()}`);
 
       if (!result.passed) {
-        throw new Error(`断言失败: ${result.message}`);
+        throw new Error(`Assertion failed: ${result.message}`);
       }
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`断言执行失败: ${errorMessage}`);
+      response.appendResponseLine(`Assertion execution failed: ${errorMessage}`);
       throw error;
     }
   },
 });
 
 /**
- * 断言元素状态（通用）
+ * Assert element state (general)
  */
 export const assertStateTool = defineTool({
   name: 'assert_state',
-  description: '断言元素的各种状态',
+  description: 'Assert various states of element',
   schema: z.object({
-    uid: z.string().describe('元素UID'),
-    visible: z.boolean().optional().describe('期望可见状态'),
-    enabled: z.boolean().optional().describe('期望启用状态'),
-    checked: z.boolean().optional().describe('期望选中状态（checkbox/radio）'),
-    focused: z.boolean().optional().describe('期望焦点状态'),
+    uid: z.string().describe('Element UID'),
+    visible: z.boolean().optional().describe('Expected visibility state'),
+    enabled: z.boolean().optional().describe('Expected enabled state'),
+    checked: z.boolean().optional().describe('Expected checked state (checkbox/radio)'),
+    focused: z.boolean().optional().describe('Expected focus state'),
   }),
   annotations: {
     audience: ['developers'],
@@ -252,17 +252,17 @@ export const assertStateTool = defineTool({
     const { uid, visible, enabled, checked, focused } = request.params;
 
     if (visible === undefined && enabled === undefined && checked === undefined && focused === undefined) {
-      throw new Error('必须指定至少一个状态参数');
+      throw new Error('Must specify at least one state parameter');
     }
 
     if (!context.currentPage) {
-      throw new Error('请先获取当前页面');
+      throw new Error('Please get current page first');
     }
 
     try {
       const results: AssertResult[] = [];
 
-      // 可见性断言
+      // Visibility assertion
       if (visible !== undefined) {
         const options: StateAssertOptions = { uid, visible };
         const result = await assertElementVisible(
@@ -273,33 +273,33 @@ export const assertStateTool = defineTool({
         results.push(result);
       }
 
-      // TODO: 这里可以添加更多状态断言，如enabled、checked、focused
-      // 目前只实现了visible，其他状态需要扩展底层函数
+      // TODO: Add more state assertions here, such as enabled, checked, focused
+      // Currently only visible is implemented, other states need to extend underlying functions
 
-      // 汇总结果
+      // Summarize results
       const allPassed = results.every(r => r.passed);
       const failedResults = results.filter(r => !r.passed);
 
-      response.appendResponseLine(`断言结果: ${allPassed ? '全部通过' : '部分失败'}`);
-      response.appendResponseLine(`检查项数: ${results.length}`);
-      response.appendResponseLine(`通过项数: ${results.filter(r => r.passed).length}`);
-      response.appendResponseLine(`失败项数: ${failedResults.length}`);
+      response.appendResponseLine(`Assertion result: ${allPassed ? 'All passed' : 'Partially failed'}`);
+      response.appendResponseLine(`Check items: ${results.length}`);
+      response.appendResponseLine(`Passed items: ${results.filter(r => r.passed).length}`);
+      response.appendResponseLine(`Failed items: ${failedResults.length}`);
 
       if (failedResults.length > 0) {
         response.appendResponseLine('');
-        response.appendResponseLine('失败详情:');
+        response.appendResponseLine('Failure details:');
         failedResults.forEach((result, index) => {
           response.appendResponseLine(`${index + 1}. ${result.message}`);
         });
       }
 
       if (!allPassed) {
-        throw new Error(`状态断言失败: ${failedResults.length}/${results.length} 项失败`);
+        throw new Error(`State assertion failed: ${failedResults.length}/${results.length} items failed`);
       }
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`断言执行失败: ${errorMessage}`);
+      response.appendResponseLine(`Assertion execution failed: ${errorMessage}`);
       throw error;
     }
   },

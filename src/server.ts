@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * 微信开发者工具自动化 MCP 服务器 (模块化版本)
- * 基于 chrome-devtools-mcp 架构模式重构
+ * WeChat DevTools Automation MCP Server (Modular Version)
+ * Refactored based on chrome-devtools-mcp architecture pattern
  */
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -24,53 +24,53 @@ import {
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 /**
- * 通过 UID 获取元素的实现
+ * Get element by UID implementation
  */
 async function getElementByUid(uid: string): Promise<any> {
-  // 1. 检查页面是否已连接
+  // 1. Check if page is connected
   if (!globalContext.currentPage) {
-    throw new Error('请先连接微信开发者工具并获取当前页面');
+    throw new Error('Please connect to WeChat DevTools and get the current page first');
   }
 
-  // 2. 检查 UID 是否存在于 elementMap
+  // 2. Check if UID exists in elementMap
   const mapInfo = globalContext.elementMap.get(uid);
   if (!mapInfo) {
     throw new Error(
-      `找不到 UID: ${uid}\n` +
-      `请先调用 get_page_snapshot 工具获取页面快照`
+      `UID not found: ${uid}\n` +
+      `Please call get_page_snapshot tool to get page snapshot first`
     );
   }
 
   console.log(`[getElementByUid] UID: ${uid}, Selector: ${mapInfo.selector}, Index: ${mapInfo.index}`);
 
-  // 3. 使用选择器获取所有匹配元素
+  // 3. Get all matching elements using selector
   const elements = await globalContext.currentPage.$$(mapInfo.selector);
   if (!elements || elements.length === 0) {
     throw new Error(
-      `选择器 "${mapInfo.selector}" 未找到任何元素\n` +
-      `页面可能已发生变化，请重新获取快照`
+      `Selector "${mapInfo.selector}" found no elements\n` +
+      `The page may have changed, please get the snapshot again`
     );
   }
 
-  // 4. 检查索引是否有效
+  // 4. Check if index is valid
   if (mapInfo.index >= elements.length) {
     throw new Error(
-      `元素索引 ${mapInfo.index} 超出范围（选择器 "${mapInfo.selector}" 共找到 ${elements.length} 个元素）\n` +
-      `页面可能已发生变化，请重新获取快照`
+      `Element index ${mapInfo.index} is out of range (selector "${mapInfo.selector}" found ${elements.length} elements)\n` +
+      `The page may have changed, please get the snapshot again`
     );
   }
 
-  // 5. 返回目标元素
+  // 5. Return target element
   const element = elements[mapInfo.index];
   if (!element) {
-    throw new Error(`无法获取索引 ${mapInfo.index} 的元素`);
+    throw new Error(`Unable to get element at index ${mapInfo.index}`);
   }
 
   return element;
 }
 
 /**
- * 全局上下文状态
+ * Global context state
  */
 const globalContext: ToolContext = {
   miniProgram: null,
@@ -93,7 +93,7 @@ const globalContext: ToolContext = {
 };
 
 /**
- * 创建 MCP 服务器
+ * Create MCP server
  */
 const server = new Server(
   {
@@ -109,38 +109,38 @@ const server = new Server(
 );
 
 /**
- * 工具处理器映射
+ * Tool handler mapping
  */
 const toolHandlers = new Map<string, ToolDefinition>();
 
 /**
- * 注册工具到 MCP 服务器
+ * Register tool to MCP server
  */
 function registerTool(tool: ToolDefinition): void {
   toolHandlers.set(tool.name, tool);
 }
 
 /**
- * 处理资源列表请求
+ * Handle resource list request
  */
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
   const resources = [];
 
-  // 连接状态资源
+  // Connection status resource
   resources.push({
     uri: "weixin://connection/status",
     mimeType: "application/json",
-    name: "连接状态",
-    description: "微信开发者工具连接状态"
+    name: "Connection Status",
+    description: "WeChat DevTools connection status"
   });
 
-  // 如果已连接，提供页面快照资源
+  // If connected, provide page snapshot resource
   if (globalContext.miniProgram && globalContext.currentPage) {
     resources.push({
       uri: "weixin://page/snapshot",
       mimeType: "application/json",
-      name: "页面快照",
-      description: "当前页面的元素快照"
+      name: "Page Snapshot",
+      description: "Current page element snapshot"
     });
   }
 
@@ -148,13 +148,13 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
 });
 
 /**
- * 处理资源读取请求
+ * Handle resource read request
  */
 server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   const url = new URL(request.params.uri);
 
-  // 对于 weixin://connection/status, url.host="connection", url.pathname="/status"
-  // 对于 weixin://page/snapshot, url.host="page", url.pathname="/snapshot"
+  // For weixin://connection/status, url.host="connection", url.pathname="/status"
+  // For weixin://page/snapshot, url.host="page", url.pathname="/snapshot"
   const resourcePath = `${url.host}${url.pathname}`;
 
   if (resourcePath === "connection/status") {
@@ -176,11 +176,11 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
   if (resourcePath === "page/snapshot") {
     if (!globalContext.currentPage) {
-      throw new Error("当前没有活动页面");
+      throw new Error("No active page currently");
     }
 
     try {
-      // 这里可以实现获取页面快照的逻辑
+      // Page snapshot retrieval logic can be implemented here
       const snapshot = {
         path: await globalContext.currentPage.path,
         elementCount: globalContext.elementMap.size,
@@ -195,15 +195,15 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
         }]
       };
     } catch (error) {
-      throw new Error(`获取页面快照失败: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Failed to get page snapshot: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  throw new Error(`未知的资源: ${request.params.uri}`);
+  throw new Error(`Unknown resource: ${request.params.uri}`);
 });
 
 /**
- * 处理工具列表请求
+ * Handle tool list request
  */
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   const tools = allTools.map(tool => ({
@@ -219,31 +219,31 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 });
 
 /**
- * 处理工具调用请求
+ * Handle tool call request
  */
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const toolName = request.params.name;
   const tool = toolHandlers.get(toolName);
 
   if (!tool) {
-    throw new Error(`未知的工具: ${toolName}`);
+    throw new Error(`Unknown tool: ${toolName}`);
   }
 
   try {
-    // 验证参数
+    // Validate parameters
     const validatedParams = tool.schema.parse(request.params.arguments || {});
 
-    // 创建工具请求和响应对象
+    // Create tool request and response objects
     const toolRequest: ToolRequest = { params: validatedParams };
     const toolResponse = new SimpleToolResponse();
 
-    // 执行工具处理器
+    // Execute tool handler
     await tool.handler(toolRequest, toolResponse, globalContext);
 
-    // 构建响应内容
+    // Build response content
     const content: any[] = [];
 
-    // 添加文本响应
+    // Add text response
     const responseText = toolResponse.getResponseText();
     if (responseText) {
       content.push({
@@ -252,7 +252,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       });
     }
 
-    // 添加附加的图片
+    // Add attached images
     const attachedImages = toolResponse.getAttachedImages();
     for (const image of attachedImages) {
       content.push({
@@ -269,7 +269,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     return {
       content: [{
         type: "text",
-        text: `工具执行失败: ${errorMessage}`
+        text: `Tool execution failed: ${errorMessage}`
       }],
       isError: true
     };
@@ -277,14 +277,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 
 /**
- * 注册所有工具
+ * Register all tools
  */
 for (const tool of allTools) {
   registerTool(tool);
 }
 
 /**
- * 启动服务器
+ * Start server
  */
 async function main() {
   const transport = new StdioServerTransport();

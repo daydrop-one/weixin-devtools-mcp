@@ -1,6 +1,6 @@
 /**
- * 页面导航工具
- * 提供小程序页面跳转、返回、Tab切换等导航功能
+ * Page Navigation Tools
+ * Provides Mini Program page navigation, back, tab switching and other navigation functions
  */
 
 import { z } from 'zod';
@@ -18,16 +18,16 @@ import {
 } from '../tools.js';
 
 /**
- * 跳转到指定页面
+ * Navigate to specified page
  */
 export const navigateToTool = defineTool({
   name: 'navigate_to',
-  description: '跳转到指定页面',
+  description: 'Navigate to specified page',
   schema: z.object({
-    url: z.string().describe('目标页面路径'),
-    params: z.record(z.string(), z.any()).optional().describe('页面参数（查询参数）'),
-    waitForLoad: z.boolean().optional().default(true).describe('是否等待页面加载完成，默认true'),
-    timeout: z.number().optional().default(10000).describe('等待超时时间(毫秒)，默认10000ms'),
+    url: z.string().describe('Target page path'),
+    params: z.record(z.string(), z.any()).optional().describe('Page parameters (query parameters)'),
+    waitForLoad: z.boolean().optional().default(true).describe('Whether to wait for page load completion, default true'),
+    timeout: z.number().optional().default(10000).describe('Wait timeout in milliseconds, default 10000ms'),
   }),
   annotations: {
     audience: ['developers'],
@@ -36,7 +36,7 @@ export const navigateToTool = defineTool({
     const { url, params, waitForLoad, timeout } = request.params;
 
     if (!context.miniProgram) {
-      throw new Error('请先连接到微信开发者工具');
+      throw new Error('Please connect to WeChat DevTools first');
     }
 
     try {
@@ -49,41 +49,41 @@ export const navigateToTool = defineTool({
 
       await navigateToPage(context.miniProgram, options);
 
-      response.appendResponseLine(`页面跳转成功`);
-      response.appendResponseLine(`目标页面: ${url}`);
+      response.appendResponseLine(`Page navigation successful`);
+      response.appendResponseLine(`Target page: ${url}`);
       if (params && Object.keys(params).length > 0) {
-        response.appendResponseLine(`参数: ${JSON.stringify(params)}`);
+        response.appendResponseLine(`Parameters: ${JSON.stringify(params)}`);
       }
 
-      // 页面跳转后，更新当前页面信息
+      // After page navigation, update current page info
       try {
         context.currentPage = await context.miniProgram.currentPage();
-        response.appendResponseLine(`当前页面已更新`);
+        response.appendResponseLine(`Current page updated`);
       } catch (error) {
-        response.appendResponseLine(`警告: 无法更新当前页面信息`);
+        response.appendResponseLine(`Warning: Unable to update current page info`);
       }
 
-      // 页面跳转后建议获取新快照
+      // Suggest getting new snapshot after page navigation
       response.setIncludeSnapshot(true);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`页面跳转失败: ${errorMessage}`);
+      response.appendResponseLine(`Page navigation failed: ${errorMessage}`);
       throw error;
     }
   },
 });
 
 /**
- * 返回上一页或指定层数
+ * Go back to previous page or specified number of levels
  */
 export const navigateBackTool = defineTool({
   name: 'navigate_back',
-  description: '返回上一页或指定层数',
+  description: 'Go back to previous page or specified number of levels',
   schema: z.object({
-    delta: z.number().optional().default(1).describe('返回层数，默认1'),
-    waitForLoad: z.boolean().optional().default(true).describe('是否等待页面加载完成，默认true'),
-    timeout: z.number().optional().default(5000).describe('等待超时时间(毫秒)，默认5000ms'),
+    delta: z.number().optional().default(1).describe('Number of levels to go back, default 1'),
+    waitForLoad: z.boolean().optional().default(true).describe('Whether to wait for page load completion, default true'),
+    timeout: z.number().optional().default(5000).describe('Wait timeout in milliseconds, default 5000ms'),
   }),
   annotations: {
     audience: ['developers'],
@@ -92,7 +92,7 @@ export const navigateBackTool = defineTool({
     const { delta, waitForLoad, timeout } = request.params;
 
     if (!context.miniProgram) {
-      throw new Error('请先连接到微信开发者工具');
+      throw new Error('Please connect to WeChat DevTools first');
     }
 
     try {
@@ -104,38 +104,38 @@ export const navigateBackTool = defineTool({
 
       await navigateBack(context.miniProgram, options);
 
-      response.appendResponseLine(`页面返回成功`);
-      response.appendResponseLine(`返回层数: ${delta}`);
+      response.appendResponseLine(`Page back successful`);
+      response.appendResponseLine(`Back levels: ${delta}`);
 
-      // 页面返回后，更新当前页面信息
+      // After going back, update current page info
       try {
         context.currentPage = await context.miniProgram.currentPage();
-        response.appendResponseLine(`当前页面已更新`);
+        response.appendResponseLine(`Current page updated`);
       } catch (error) {
-        response.appendResponseLine(`警告: 无法更新当前页面信息`);
+        response.appendResponseLine(`Warning: Unable to update current page info`);
       }
 
-      // 页面返回后建议获取新快照
+      // Suggest getting new snapshot after going back
       response.setIncludeSnapshot(true);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`页面返回失败: ${errorMessage}`);
+      response.appendResponseLine(`Page back failed: ${errorMessage}`);
       throw error;
     }
   },
 });
 
 /**
- * 切换到指定Tab页
+ * Switch to specified tab page
  */
 export const switchTabTool = defineTool({
   name: 'switch_tab',
-  description: '切换到指定Tab页',
+  description: 'Switch to specified tab page',
   schema: z.object({
-    url: z.string().describe('Tab页路径'),
-    waitForLoad: z.boolean().optional().default(true).describe('是否等待页面加载完成，默认true'),
-    timeout: z.number().optional().default(5000).describe('等待超时时间(毫秒)，默认5000ms'),
+    url: z.string().describe('Tab page path'),
+    waitForLoad: z.boolean().optional().default(true).describe('Whether to wait for page load completion, default true'),
+    timeout: z.number().optional().default(5000).describe('Wait timeout in milliseconds, default 5000ms'),
   }),
   annotations: {
     audience: ['developers'],
@@ -144,7 +144,7 @@ export const switchTabTool = defineTool({
     const { url, waitForLoad, timeout } = request.params;
 
     if (!context.miniProgram) {
-      throw new Error('请先连接到微信开发者工具');
+      throw new Error('Please connect to WeChat DevTools first');
     }
 
     try {
@@ -156,39 +156,39 @@ export const switchTabTool = defineTool({
 
       await switchTab(context.miniProgram, options);
 
-      response.appendResponseLine(`Tab切换成功`);
-      response.appendResponseLine(`目标Tab: ${url}`);
+      response.appendResponseLine(`Tab switch successful`);
+      response.appendResponseLine(`Target tab: ${url}`);
 
-      // Tab切换后，更新当前页面信息
+      // After tab switch, update current page info
       try {
         context.currentPage = await context.miniProgram.currentPage();
-        response.appendResponseLine(`当前页面已更新`);
+        response.appendResponseLine(`Current page updated`);
       } catch (error) {
-        response.appendResponseLine(`警告: 无法更新当前页面信息`);
+        response.appendResponseLine(`Warning: Unable to update current page info`);
       }
 
-      // Tab切换后建议获取新快照
+      // Suggest getting new snapshot after tab switch
       response.setIncludeSnapshot(true);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`Tab切换失败: ${errorMessage}`);
+      response.appendResponseLine(`Tab switch failed: ${errorMessage}`);
       throw error;
     }
   },
 });
 
 /**
- * 重新启动到指定页面
+ * Relaunch to specified page
  */
 export const reLaunchTool = defineTool({
   name: 'relaunch',
-  description: '重新启动小程序并跳转到指定页面',
+  description: 'Relaunch mini program and navigate to specified page',
   schema: z.object({
-    url: z.string().describe('目标页面路径'),
-    params: z.record(z.string(), z.any()).optional().describe('页面参数（查询参数）'),
-    waitForLoad: z.boolean().optional().default(true).describe('是否等待页面加载完成，默认true'),
-    timeout: z.number().optional().default(10000).describe('等待超时时间(毫秒)，默认10000ms'),
+    url: z.string().describe('Target page path'),
+    params: z.record(z.string(), z.any()).optional().describe('Page parameters (query parameters)'),
+    waitForLoad: z.boolean().optional().default(true).describe('Whether to wait for page load completion, default true'),
+    timeout: z.number().optional().default(10000).describe('Wait timeout in milliseconds, default 10000ms'),
   }),
   annotations: {
     audience: ['developers'],
@@ -197,7 +197,7 @@ export const reLaunchTool = defineTool({
     const { url, params, waitForLoad, timeout } = request.params;
 
     if (!context.miniProgram) {
-      throw new Error('请先连接到微信开发者工具');
+      throw new Error('Please connect to WeChat DevTools first');
     }
 
     try {
@@ -210,83 +210,83 @@ export const reLaunchTool = defineTool({
 
       await reLaunch(context.miniProgram, options);
 
-      response.appendResponseLine(`重新启动成功`);
-      response.appendResponseLine(`目标页面: ${url}`);
+      response.appendResponseLine(`Relaunch successful`);
+      response.appendResponseLine(`Target page: ${url}`);
       if (params && Object.keys(params).length > 0) {
-        response.appendResponseLine(`参数: ${JSON.stringify(params)}`);
+        response.appendResponseLine(`Parameters: ${JSON.stringify(params)}`);
       }
 
-      // 重新启动后，更新当前页面信息
+      // After relaunch, update current page info
       try {
         context.currentPage = await context.miniProgram.currentPage();
-        response.appendResponseLine(`当前页面已更新`);
+        response.appendResponseLine(`Current page updated`);
       } catch (error) {
-        response.appendResponseLine(`警告: 无法更新当前页面信息`);
+        response.appendResponseLine(`Warning: Unable to update current page info`);
       }
 
-      // 重新启动后建议获取新快照
+      // Suggest getting new snapshot after relaunch
       response.setIncludeSnapshot(true);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`重新启动失败: ${errorMessage}`);
+      response.appendResponseLine(`Relaunch failed: ${errorMessage}`);
       throw error;
     }
   },
 });
 
 /**
- * 获取当前页面信息
+ * Get current page information
  */
 export const getPageInfoTool = defineTool({
   name: 'get_page_info',
-  description: '获取当前页面的详细信息',
+  description: 'Get detailed information of current page',
   schema: z.object({}),
   annotations: {
     audience: ['developers'],
   },
   handler: async (request, response, context) => {
     if (!context.miniProgram) {
-      throw new Error('请先连接到微信开发者工具');
+      throw new Error('Please connect to WeChat DevTools first');
     }
 
     try {
       const pageInfo: PageInfo = await getCurrentPageInfo(context.miniProgram);
 
-      response.appendResponseLine(`页面信息获取成功`);
-      response.appendResponseLine(`路径: ${pageInfo.path}`);
+      response.appendResponseLine(`Page info retrieved successfully`);
+      response.appendResponseLine(`Path: ${pageInfo.path}`);
 
       if (pageInfo.title) {
-        response.appendResponseLine(`标题: ${pageInfo.title}`);
+        response.appendResponseLine(`Title: ${pageInfo.title}`);
       }
 
       if (pageInfo.query && Object.keys(pageInfo.query).length > 0) {
-        response.appendResponseLine(`查询参数: ${JSON.stringify(pageInfo.query)}`);
+        response.appendResponseLine(`Query parameters: ${JSON.stringify(pageInfo.query)}`);
       }
 
       response.appendResponseLine('');
-      response.appendResponseLine('完整信息:');
+      response.appendResponseLine('Complete info:');
       response.appendResponseLine(JSON.stringify(pageInfo, null, 2));
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`获取页面信息失败: ${errorMessage}`);
+      response.appendResponseLine(`Failed to get page info: ${errorMessage}`);
       throw error;
     }
   },
 });
 
 /**
- * 重定向到指定页面（替换当前页面）
+ * Redirect to specified page (replace current page)
  */
 export const redirectToTool = defineTool({
   name: 'redirect_to',
-  description: '重定向到指定页面（关闭当前页面并跳转）',
+  description: 'Redirect to specified page (close current page and navigate)',
   schema: z.object({
-    url: z.string().describe('目标页面路径'),
-    params: z.record(z.string(), z.any()).optional().describe('页面参数（查询参数）'),
-    waitForLoad: z.boolean().optional().default(true).describe('是否等待页面加载完成，默认true'),
-    timeout: z.number().optional().default(10000).describe('等待超时时间(毫秒)，默认10000ms'),
+    url: z.string().describe('Target page path'),
+    params: z.record(z.string(), z.any()).optional().describe('Page parameters (query parameters)'),
+    waitForLoad: z.boolean().optional().default(true).describe('Whether to wait for page load completion, default true'),
+    timeout: z.number().optional().default(10000).describe('Wait timeout in milliseconds, default 10000ms'),
   }),
   annotations: {
     audience: ['developers'],
@@ -295,11 +295,11 @@ export const redirectToTool = defineTool({
     const { url, params, waitForLoad, timeout } = request.params;
 
     if (!context.miniProgram) {
-      throw new Error('请先连接到微信开发者工具');
+      throw new Error('Please connect to WeChat DevTools first');
     }
 
     try {
-      // 构建完整的URL
+      // Build full URL
       let fullUrl = url;
       if (params && Object.keys(params).length > 0) {
         const queryString = Object.entries(params)
@@ -308,10 +308,10 @@ export const redirectToTool = defineTool({
         fullUrl += (url.includes('?') ? '&' : '?') + queryString;
       }
 
-      // 执行重定向
+      // Execute redirect
       await context.miniProgram.redirectTo(fullUrl);
 
-      // 等待页面加载完成
+      // Wait for page load completion
       if (waitForLoad) {
         const startTime = Date.now();
         while (Date.now() - startTime < timeout) {
@@ -319,38 +319,38 @@ export const redirectToTool = defineTool({
             const currentPage = await context.miniProgram.currentPage();
             if (currentPage) {
               const currentPath = await currentPage.path;
-              // 检查是否已经重定向到目标页面
+              // Check if already redirected to target page
               if (currentPath.includes(url.split('?')[0])) {
                 break;
               }
             }
           } catch (error) {
-            // 继续等待
+            // Continue waiting
           }
           await new Promise(resolve => setTimeout(resolve, 100));
         }
       }
 
-      response.appendResponseLine(`页面重定向成功`);
-      response.appendResponseLine(`目标页面: ${url}`);
+      response.appendResponseLine(`Page redirect successful`);
+      response.appendResponseLine(`Target page: ${url}`);
       if (params && Object.keys(params).length > 0) {
-        response.appendResponseLine(`参数: ${JSON.stringify(params)}`);
+        response.appendResponseLine(`Parameters: ${JSON.stringify(params)}`);
       }
 
-      // 重定向后，更新当前页面信息
+      // After redirect, update current page info
       try {
         context.currentPage = await context.miniProgram.currentPage();
-        response.appendResponseLine(`当前页面已更新`);
+        response.appendResponseLine(`Current page updated`);
       } catch (error) {
-        response.appendResponseLine(`警告: 无法更新当前页面信息`);
+        response.appendResponseLine(`Warning: Unable to update current page info`);
       }
 
-      // 重定向后建议获取新快照
+      // Suggest getting new snapshot after redirect
       response.setIncludeSnapshot(true);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`页面重定向失败: ${errorMessage}`);
+      response.appendResponseLine(`Page redirect failed: ${errorMessage}`);
       throw error;
     }
   },

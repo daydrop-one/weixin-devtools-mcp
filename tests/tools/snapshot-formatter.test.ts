@@ -1,5 +1,5 @@
 /**
- * 快照格式化器单元测试
+ * Snapshot Formatter Unit Tests
  */
 
 import { describe, it, expect } from 'vitest';
@@ -10,7 +10,7 @@ import {
 } from '../../src/formatters/snapshotFormatter.js';
 import type { PageSnapshot } from '../../src/tools.js';
 
-// 测试数据
+// Test data
 const mockSnapshot: PageSnapshot = {
   path: 'pages/index/index',
   elements: [

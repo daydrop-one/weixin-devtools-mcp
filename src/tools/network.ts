@@ -1,26 +1,26 @@
 /**
- * 网络请求监听工具
- * 通过拦截 wx.request, wx.uploadFile, wx.downloadFile 实现网络监控
+ * Network request monitoring tools
+ * Implements network monitoring by intercepting wx.request, wx.uploadFile, wx.downloadFile
  */
 
 import { z } from 'zod';
 import { defineTool, NetworkRequest, NetworkRequestType } from './ToolDefinition.js';
 
 /**
- * 创建请求拦截器函数
- * 注意: 这个函数会被序列化后在小程序环境执行,不能使用闭包变量
- * 保持函数简单,只记录信息然后调用原始方法
+ * Create request interceptor function
+ * Note: This function will be serialized and executed in the miniprogram environment, cannot use closure variables
+ * Keep the function simple, only record information then call the original method
  */
 function createRequestInterceptor() {
   return function(this: any, options: any) {
-    // 初始化全局存储
-    // 关键修复: 在小程序环境中直接访问 wx 对象,不通过 globalThis
-    // wx 是小程序提供的全局对象,直接可用
+    // Initialize global storage
+    // Key fix: Directly access wx object in miniprogram environment, not through globalThis
+    // wx is a global object provided by miniprogram, directly available
     // @ts-ignore - wx is available in WeChat miniprogram environment
     const wxObj = (typeof wx !== 'undefined' ? wx : null) as any;
 
     if (!wxObj) {
-      // wx 对象不存在,无法记录,直接调用原始方法
+      // wx object does not exist, cannot record, call original method directly
       return this.origin(options);
     }
 
@@ -31,7 +31,7 @@ function createRequestInterceptor() {
     const requestId = 'req_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
     const startTime = Date.now();
 
-    // 包装 success 回调
+    // Wrap success callback
     const originalSuccess = options.success;
     options.success = function(res: any) {
       wxObj.__networkLogs.push({
@@ -51,7 +51,7 @@ function createRequestInterceptor() {
       if (originalSuccess) originalSuccess(res);
     };
 
-    // 包装 fail 回调
+    // Wrap fail callback
     const originalFail = options.fail;
     options.fail = function(err: any) {
       wxObj.__networkLogs.push({
@@ -70,13 +70,13 @@ function createRequestInterceptor() {
       if (originalFail) originalFail(err);
     };
 
-    // 调用原始方法
+    // Call original method
     return this.origin(options);
   };
 }
 
 /**
- * 创建 uploadFile 拦截器函数
+ * Create uploadFile interceptor function
  */
 function createUploadFileInterceptor() {
   return function(this: any, options: any) {
@@ -142,7 +142,7 @@ function createUploadFileInterceptor() {
 }
 
 /**
- * 创建 downloadFile 拦截器函数
+ * Create downloadFile interceptor function
  */
 function createDownloadFileInterceptor() {
   return function(this: any, options: any) {
@@ -201,16 +201,16 @@ function createDownloadFileInterceptor() {
 }
 
 /**
- * 启动网络监听工具
+ * Start network monitoring tool
  *
- * 使用evaluate()直接在小程序环境注入拦截代码
- * 这种方式可以绕过Mpx等框架的API缓存问题
+ * Uses evaluate() to directly inject interception code in the miniprogram environment
+ * This approach can bypass API caching issues in frameworks like Mpx
  */
 export const startNetworkMonitoringTool = defineTool({
   name: 'start_network_monitoring',
-  description: '启动对微信小程序网络请求的监听，拦截 wx.request、wx.uploadFile、wx.downloadFile',
+  description: 'Start monitoring network requests in WeChat miniprogram, intercepting wx.request, wx.uploadFile, wx.downloadFile',
   schema: z.object({
-    clearExisting: z.boolean().optional().default(false).describe('是否清除已有的网络请求记录'),
+    clearExisting: z.boolean().optional().default(false).describe('Whether to clear existing network request records'),
   }),
   annotations: {
     audience: ['developers'],
@@ -219,61 +219,61 @@ export const startNetworkMonitoringTool = defineTool({
     const { clearExisting } = request.params;
 
     if (!context.miniProgram) {
-      throw new Error('请先连接到微信开发者工具');
+      throw new Error('Please connect to WeChat DevTools first');
     }
 
     if (context.networkStorage.isMonitoring) {
-      response.appendResponseLine('网络监听已在运行中');
-      response.appendResponseLine(`当前已记录 ${context.networkStorage.requests.length} 个网络请求`);
+      response.appendResponseLine('Network monitoring is already running');
+      response.appendResponseLine(`Currently recorded ${context.networkStorage.requests.length} network requests`);
       return;
     }
 
-    // 清除现有记录
+    // Clear existing records
     if (clearExisting) {
       context.networkStorage.requests = [];
     }
 
     try {
-      // 使用evaluate()方式在小程序环境中直接注入拦截代码
-      // 支持双模式：Mpx框架拦截器 + wx.request回退方案
+      // Use evaluate() to directly inject interception code in the miniprogram environment
+      // Supports dual mode: Mpx framework interceptor + wx.request fallback
       await context.miniProgram.evaluate(function(shouldClear: boolean) {
-        // @ts-ignore - wx在小程序环境中可用
+        // @ts-ignore - wx is available in WeChat miniprogram environment
         if (typeof wx === 'undefined') {
-          throw new Error('wx对象不可用');
+          throw new Error('wx object is not available');
         }
 
-        // 初始化或清除存储
+        // Initialize or clear storage
         // @ts-ignore
         if (!wx.__networkLogs || shouldClear) {
           // @ts-ignore
           wx.__networkLogs = [];
         }
 
-        // 检查是否已经注入过拦截器
+        // Check if interceptor is already installed
         // @ts-ignore
         if (wx.__networkInterceptorsInstalled && !shouldClear) {
-          console.log('[MCP-DEBUG] 拦截器已安装，跳过重复安装');
-          return; // 已安装，跳过
+          console.log('[MCP-DEBUG] Interceptor already installed, skipping duplicate installation');
+          return; // Already installed, skip
         }
 
-        // 如果需要清除，先删除旧的标记
+        // If clearing is needed, delete old markers first
         if (shouldClear) {
-          console.log('[MCP-DEBUG] 强制重装：清除旧的安装标记');
+          console.log('[MCP-DEBUG] Force reinstall: clearing old installation marker');
           // @ts-ignore
           delete wx.__networkInterceptorsInstalled;
-          // 同时清空pending队列和config缓存
+          // Also clear pending queue and config cache
           // @ts-ignore
           wx.__pendingQueue = [];
           // @ts-ignore
           wx.__requestConfigMap = {};
         }
 
-        // ===== 模式1：检测并使用Mpx框架拦截器 =====
-        console.log('[MCP-DEBUG] 开始检测Mpx框架...');
+        // ===== Mode 1: Detect and use Mpx framework interceptor =====
+        console.log('[MCP-DEBUG] Starting Mpx framework detection...');
 
         // @ts-ignore - getApp is available in WeChat miniprogram environment
         const app = getApp();
-        console.log('[MCP-DEBUG] getApp() 结果:', {
+        console.log('[MCP-DEBUG] getApp() result:', {
           hasApp: !!app,
           appType: typeof app,
           hasXfetch: !!(app && app.$xfetch),
@@ -285,7 +285,7 @@ export const startNetworkMonitoringTool = defineTool({
                             app.$xfetch.interceptors &&
                             typeof app.$xfetch.interceptors.request.use === 'function';
 
-        console.log('[MCP-DEBUG] Mpx检测结果:', {
+        console.log('[MCP-DEBUG] Mpx detection result:', {
           hasMpxFetch: hasMpxFetch,
           hasInterceptors: !!(app && app.$xfetch && app.$xfetch.interceptors),
           hasRequestUse: !!(app && app.$xfetch && app.$xfetch.interceptors && app.$xfetch.interceptors.request),
@@ -293,10 +293,10 @@ export const startNetworkMonitoringTool = defineTool({
         });
 
         if (hasMpxFetch) {
-          console.log('[MCP] ✅ 检测到Mpx框架，使用getApp().$xfetch拦截器模式');
-          console.log('[MCP] 📝 使用Pending队列方案解决业务拦截器改变响应结构的问题');
+          console.log('[MCP] ✅ Mpx framework detected, using getApp().$xfetch interceptor mode');
+          console.log('[MCP] 📝 Using pending queue solution to resolve response structure changes by business interceptors');
 
-          // 初始化pending队列和config缓存
+          // Initialize pending queue and config cache
           // @ts-ignore
           if (!wx.__pendingQueue) {
             // @ts-ignore
@@ -308,10 +308,10 @@ export const startNetworkMonitoringTool = defineTool({
             wx.__requestConfigMap = {};
           }
 
-          // 如果需要重装,清空旧的Mpx拦截器handlers(防止累加)
+          // If reinstalling, clear old Mpx interceptor handlers (prevent accumulation)
           if (shouldClear) {
-            console.log('[MCP-DEBUG] 准备清空handlers, shouldClear=', shouldClear);
-            console.log('[MCP-DEBUG] request拦截器结构:', {
+            console.log('[MCP-DEBUG] Preparing to clear handlers, shouldClear=', shouldClear);
+            console.log('[MCP-DEBUG] request interceptor structure:', {
               hasInterceptors: !!app.$xfetch.interceptors.request,
               hasHandlers: !!app.$xfetch.interceptors.request.handlers,
               handlersType: typeof app.$xfetch.interceptors.request.handlers,
@@ -322,28 +322,28 @@ export const startNetworkMonitoringTool = defineTool({
             if (app.$xfetch.interceptors.request && app.$xfetch.interceptors.request.handlers) {
               // @ts-ignore
               app.$xfetch.interceptors.request.handlers = [];
-              console.log('[MCP-DEBUG] ✅ 已清空旧的request拦截器handlers');
+              console.log('[MCP-DEBUG] ✅ Cleared old request interceptor handlers');
             } else {
-              console.log('[MCP-DEBUG] ⚠️  request.handlers不存在或不是数组');
+              console.log('[MCP-DEBUG] ⚠️  request.handlers does not exist or is not an array');
             }
 
             // @ts-ignore
             if (app.$xfetch.interceptors.response && app.$xfetch.interceptors.response.handlers) {
               // @ts-ignore
               app.$xfetch.interceptors.response.handlers = [];
-              console.log('[MCP-DEBUG] ✅ 已清空旧的response拦截器handlers');
+              console.log('[MCP-DEBUG] ✅ Cleared old response interceptor handlers');
             } else {
-              console.log('[MCP-DEBUG] ⚠️  response.handlers不存在或不是数组');
+              console.log('[MCP-DEBUG] ⚠️  response.handlers does not exist or is not an array');
             }
           }
 
-          // 请求拦截器 - 记录请求开始并缓存config
+          // Request interceptor - Record request start and cache config
           // @ts-ignore
           getApp().$xfetch.interceptors.request.use(function(config: any) {
             const requestId = 'mpx_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
             const startTime = Date.now();
 
-            console.log('[MCP-DEBUG] 🔵 请求拦截器被触发:', {
+            console.log('[MCP-DEBUG] 🔵 Request interceptor triggered:', {
               requestId: requestId,
               method: config.method,
               url: config.url,
@@ -352,7 +352,7 @@ export const startNetworkMonitoringTool = defineTool({
               timestamp: new Date().toISOString()
             });
 
-            // 保存完整的config到缓存(因为响应拦截器可能拿不到requestConfig)
+            // Save complete config to cache (because response interceptor may not have access to requestConfig)
             // @ts-ignore
             wx.__requestConfigMap[requestId] = {
               url: config.url,
@@ -363,7 +363,7 @@ export const startNetworkMonitoringTool = defineTool({
               timeout: config.timeout || 30000
             };
 
-            // 添加到pending队列(FIFO)
+            // Add to pending queue (FIFO)
             // @ts-ignore
             wx.__pendingQueue.push({
               id: requestId,
@@ -372,11 +372,11 @@ export const startNetworkMonitoringTool = defineTool({
               startTime: startTime
             });
 
-            // 清理超时的pending请求(避免队列堆积)
+            // Clean up timed-out pending requests (avoid queue buildup)
             const timeout = config.timeout || 30000;
             // @ts-ignore
             wx.__pendingQueue = wx.__pendingQueue.filter((item: any) =>
-              Date.now() - item.startTime < timeout + 5000  // 额外5秒容错
+              Date.now() - item.startTime < timeout + 5000  // Extra 5 seconds tolerance
             );
 
             // @ts-ignore - wx is available in WeChat miniprogram environment
@@ -390,69 +390,69 @@ export const startNetworkMonitoringTool = defineTool({
               params: config.params,
               timestamp: new Date(startTime).toISOString(),
               source: 'getApp().$xfetch',
-              pending: true,  // 标记为待完成状态
-              success: undefined  // 初始化success字段，避免状态判断问题
+              pending: true,  // Mark as pending
+              success: undefined  // Initialize success field, avoid state judgment issues
             });
 
-            // @ts-ignore - wx在小程序环境可用
-            console.log('[MCP-DEBUG] ✅ 请求已记录, pending队列:', wx.__pendingQueue.length, ', 日志数:', wx.__networkLogs.length);
+            // @ts-ignore - wx is available in WeChat miniprogram environment
+            console.log('[MCP-DEBUG] ✅ Request recorded, pending queue:', wx.__pendingQueue.length, ', logs:', wx.__networkLogs.length);
 
-            return config; // 必须返回config继续请求链
+            return config; // Must return config to continue request chain
           });
 
-          // 响应拦截器 - 使用Pending队列匹配请求/响应
+          // Response interceptor - Use pending queue to match request/response
           // @ts-ignore
           getApp().$xfetch.interceptors.response.use(
             function onSuccess(data: any) {
               try {
-                // 注意: data可能只是业务数据(如{goodsList, tripId})，而不是完整的response对象
-                // 因为业务拦截器(commonResInterceptor)改变了响应结构
+                // Note: data may only be business data (e.g., {goodsList, tripId}), not complete response object
+                // Because business interceptors (commonResInterceptor) changed the response structure
 
-                console.log('[MCP-DEBUG] 🟢 响应拦截器被触发(成功)');
-                console.log('[MCP-DEBUG] 🔍 响应数据类型:', typeof data, ', 键:', Object.keys(data || {}));
+                console.log('[MCP-DEBUG] 🟢 Response interceptor triggered (success)');
+                console.log('[MCP-DEBUG] 🔍 Response data type:', typeof data, ', keys:', Object.keys(data || {}));
 
-                // 从Pending队列获取最早的请求(FIFO匹配)
+                // Get earliest request from pending queue (FIFO matching)
                 // @ts-ignore
                 const requestInfo = wx.__pendingQueue.shift();
 
                 if (!requestInfo) {
-                  console.log('[MCP-DEBUG] ⚠️  Pending队列为空，无法匹配请求');
+                  console.log('[MCP-DEBUG] ⚠️  Pending queue is empty, cannot match request');
                   return data;
                 }
 
                 const duration = Date.now() - requestInfo.startTime;
 
-                console.log('[MCP-DEBUG] 📦 从队列取出请求:', {
+                console.log('[MCP-DEBUG] 📦 Retrieved request from queue:', {
                   requestId: requestInfo.id,
                   url: requestInfo.url,
                   method: requestInfo.method,
                   duration: duration + 'ms'
                 });
 
-                // 从缓存获取完整的请求配置
+                // Get complete request config from cache
                 // @ts-ignore
                 const savedConfig = wx.__requestConfigMap[requestInfo.id];
 
                 if (!savedConfig) {
-                  console.log('[MCP-DEBUG] ⚠️  未找到缓存的config');
+                  console.log('[MCP-DEBUG] ⚠️  Cached config not found');
                 }
 
                 // @ts-ignore
-                // 找到对应的日志记录并更新
+                // Find corresponding log record and update
                 let logIndex = wx.__networkLogs.findIndex((log: any) => log.id === requestInfo.id);
 
-                // 增强：如果按ID找不到，尝试按URL和时间窗口匹配（fallback策略）
+                // Enhancement: If not found by ID, try matching by URL and time window (fallback strategy)
                 if (logIndex === -1) {
-                  console.log('[MCP-DEBUG] ⚠️  按ID未找到日志，尝试URL匹配...');
+                  console.log('[MCP-DEBUG] ⚠️  Log not found by ID, trying URL matching...');
                   // @ts-ignore
                   logIndex = wx.__networkLogs.findIndex((log: any) =>
                     log.url === requestInfo.url &&
                     log.pending === true &&
-                    Math.abs(new Date(log.timestamp).getTime() - requestInfo.startTime) < 10000 // 10秒窗口
+                    Math.abs(new Date(log.timestamp).getTime() - requestInfo.startTime) < 10000 // 10-second window
                   );
 
                   if (logIndex !== -1) {
-                    console.log('[MCP-DEBUG] ✅ 通过URL匹配找到日志, 索引:', logIndex);
+                    console.log('[MCP-DEBUG] ✅ Found log via URL matching, index:', logIndex);
                   }
                 }
 
@@ -462,51 +462,51 @@ export const startNetworkMonitoringTool = defineTool({
                   // @ts-ignore
                   wx.__networkLogs[logIndex] = {
                     ...existingLog,
-                    statusCode: 200,  // 能到这里说明成功
-                    response: data,   // 只能拿到业务数据
+                    statusCode: 200,  // Success if we got here
+                    response: data,   // Can only get business data
                     duration: duration,
                     completedAt: new Date().toISOString(),
                     pending: false,
                     success: true
                   };
-                  console.log('[MCP-DEBUG] ✅ 请求记录已更新 (合并响应), 索引:', logIndex);
+                  console.log('[MCP-DEBUG] ✅ Request record updated (merged response), index:', logIndex);
                 } else {
-                  console.log('[MCP-DEBUG] ❌ 完全未找到匹配的日志记录, requestId:', requestInfo.id, ', url:', requestInfo.url);
+                  console.log('[MCP-DEBUG] ❌ Matching log record not found at all, requestId:', requestInfo.id, ', url:', requestInfo.url);
                 }
 
-                // 清理config缓存
+                // Clean up config cache
                 // @ts-ignore
                 if (savedConfig) {
                   // @ts-ignore
                   delete wx.__requestConfigMap[requestInfo.id];
                 }
 
-                // @ts-ignore - wx在小程序环境可用
-                console.log('[MCP-DEBUG] 📊 状态 - 日志:', wx.__networkLogs.length, ', pending:', wx.__pendingQueue.length, ', config缓存:', Object.keys(wx.__requestConfigMap || {}).length);
+                // @ts-ignore - wx is available in WeChat miniprogram environment
+                console.log('[MCP-DEBUG] 📊 Status - logs:', wx.__networkLogs.length, ', pending:', wx.__pendingQueue.length, ', config cache:', Object.keys(wx.__requestConfigMap || {}).length);
 
-                return data; // 必须返回data继续拦截器链
+                return data; // Must return data to continue interceptor chain
               } catch (error) {
-                console.log('[MCP-DEBUG] ❌ 响应拦截器异常:', error);
-                return data; // 即使出错也要返回data，不能中断业务逻辑
+                console.log('[MCP-DEBUG] ❌ Response interceptor exception:', error);
+                return data; // Even if error occurs, must return data, cannot interrupt business logic
               }
             },
             function onError(error: any) {
               try {
-                console.log('[MCP-DEBUG] 🔴 响应拦截器被触发(错误)');
-                console.log('[MCP-DEBUG] 🔍 错误对象:', error);
+                console.log('[MCP-DEBUG] 🔴 Response interceptor triggered (error)');
+                console.log('[MCP-DEBUG] 🔍 Error object:', error);
 
-                // 从Pending队列获取最早的请求(FIFO匹配)
+                // Get earliest request from pending queue (FIFO matching)
                 // @ts-ignore
                 const requestInfo = wx.__pendingQueue.shift();
 
                 if (!requestInfo) {
-                  console.log('[MCP-DEBUG] ⚠️  Pending队列为空，无法匹配错误请求');
+                  console.log('[MCP-DEBUG] ⚠️  Pending queue is empty, cannot match error request');
                   return Promise.reject(error);
                 }
 
                 const duration = Date.now() - requestInfo.startTime;
 
-                console.log('[MCP-DEBUG] 📦 从队列取出请求(错误):', {
+                console.log('[MCP-DEBUG] 📦 Retrieved request from queue (error):', {
                   requestId: requestInfo.id,
                   url: requestInfo.url,
                   error: error.errMsg || error.msg || error.message || String(error),
@@ -514,21 +514,21 @@ export const startNetworkMonitoringTool = defineTool({
                 });
 
                 // @ts-ignore
-                // 找到对应的日志记录并更新
+                // Find corresponding log record and update
                 let logIndex = wx.__networkLogs.findIndex((log: any) => log.id === requestInfo.id);
 
-                // 增强：如果按ID找不到，尝试按URL和时间窗口匹配（fallback策略）
+                // Enhancement: If not found by ID, try matching by URL and time window (fallback strategy)
                 if (logIndex === -1) {
-                  console.log('[MCP-DEBUG] ⚠️  按ID未找到日志（错误场景），尝试URL匹配...');
+                  console.log('[MCP-DEBUG] ⚠️  Log not found by ID (error scenario), trying URL matching...');
                   // @ts-ignore
                   logIndex = wx.__networkLogs.findIndex((log: any) =>
                     log.url === requestInfo.url &&
                     log.pending === true &&
-                    Math.abs(new Date(log.timestamp).getTime() - requestInfo.startTime) < 10000 // 10秒窗口
+                    Math.abs(new Date(log.timestamp).getTime() - requestInfo.startTime) < 10000 // 10-second window
                   );
 
                   if (logIndex !== -1) {
-                    console.log('[MCP-DEBUG] ✅ 通过URL匹配找到日志（错误场景）, 索引:', logIndex);
+                    console.log('[MCP-DEBUG] ✅ Found log via URL matching (error scenario), index:', logIndex);
                   }
                 }
 
@@ -545,46 +545,46 @@ export const startNetworkMonitoringTool = defineTool({
                     pending: false,
                     success: false
                   };
-                  console.log('[MCP-DEBUG] ✅ 请求记录已更新 (合并错误), 索引:', logIndex);
+                  console.log('[MCP-DEBUG] ✅ Request record updated (merged error), index:', logIndex);
                 } else {
-                  console.log('[MCP-DEBUG] ❌ 完全未找到匹配的日志记录（错误场景）, requestId:', requestInfo.id, ', url:', requestInfo.url);
+                  console.log('[MCP-DEBUG] ❌ Matching log record not found at all (error scenario), requestId:', requestInfo.id, ', url:', requestInfo.url);
                 }
 
-                // 清理config缓存
+                // Clean up config cache
                 // @ts-ignore
                 if (wx.__requestConfigMap && wx.__requestConfigMap[requestInfo.id]) {
                   // @ts-ignore
                   delete wx.__requestConfigMap[requestInfo.id];
                 }
 
-                // @ts-ignore - wx在小程序环境可用
-                console.log('[MCP-DEBUG] 📊 状态 - 日志:', wx.__networkLogs.length, ', pending:', wx.__pendingQueue.length);
+                // @ts-ignore - wx is available in WeChat miniprogram environment
+                console.log('[MCP-DEBUG] 📊 Status - logs:', wx.__networkLogs.length, ', pending:', wx.__pendingQueue.length);
 
-                return Promise.reject(error); // 保持错误传播
+                return Promise.reject(error); // Maintain error propagation
               } catch (innerError) {
-                console.log('[MCP-DEBUG] ❌ 错误拦截器异常:', innerError);
-                return Promise.reject(error); // 即使出错也要传播原始错误，不能中断业务逻辑
+                console.log('[MCP-DEBUG] ❌ Error interceptor exception:', innerError);
+                return Promise.reject(error); // Even if error occurs, must propagate original error, cannot interrupt business logic
               }
             }
           );
 
           // @ts-ignore - wx is available in WeChat miniprogram environment
           wx.__networkInterceptorsInstalled = 'mpx';
-          console.log('[MCP] ✅ Mpx拦截器安装完成');
+          console.log('[MCP] ✅ Mpx interceptor installation completed');
           // @ts-ignore - wx is available in WeChat miniprogram environment
-          console.log('[MCP-DEBUG] 拦截器已标记为已安装: wx.__networkInterceptorsInstalled =', wx.__networkInterceptorsInstalled);
+          console.log('[MCP-DEBUG] Interceptor marked as installed: wx.__networkInterceptorsInstalled =', wx.__networkInterceptorsInstalled);
         } else {
-          console.log('[MCP] ⚠️  未检测到Mpx框架或$xfetch不可用');
+          console.log('[MCP] ⚠️  Mpx framework not detected or $xfetch not available');
         }
 
-        // ===== 模式2：wx.request回退方案（用于非Mpx框架或直接调用wx API的场景） =====
+        // ===== Mode 2: wx.request fallback (for non-Mpx frameworks or direct wx API calls) =====
         if (!hasMpxFetch) {
-          console.log('[MCP] ⚠️  未检测到Mpx框架，使用wx.request拦截模式');
+          console.log('[MCP] ⚠️  Mpx framework not detected, using wx.request interception mode');
         } else {
-          console.log('[MCP-DEBUG] Mpx模式下，同时安装wx.request回退拦截器（双保险）');
+          console.log('[MCP-DEBUG] In Mpx mode, also installing wx.request fallback interceptor (double insurance)');
         }
 
-        // 保存原始方法引用（通过getter获取）
+        // Save original method references (obtained via getter)
         // @ts-ignore
         const _originalRequest = wx.request;
         // @ts-ignore
@@ -592,14 +592,14 @@ export const startNetworkMonitoringTool = defineTool({
         // @ts-ignore
         const _originalDownloadFile = wx.downloadFile;
 
-        console.log('[MCP-DEBUG] 原始方法类型:', {
+        console.log('[MCP-DEBUG] Original method types:', {
           requestType: typeof _originalRequest,
           uploadFileType: typeof _originalUploadFile,
           downloadFileType: typeof _originalDownloadFile
         });
 
-        // 拦截 wx.request
-        // 关键：先删除getter属性，然后重新定义为普通属性
+        // Intercept wx.request
+        // Key: First delete getter property, then redefine as normal property
         // @ts-ignore
         delete wx.request;
         // @ts-ignore
@@ -611,7 +611,7 @@ export const startNetworkMonitoringTool = defineTool({
             const requestId = 'req_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
             const startTime = Date.now();
 
-            console.log('[MCP-DEBUG] 🔵 wx.request 被调用:', {
+            console.log('[MCP-DEBUG] 🔵 wx.request called:', {
               requestId: requestId,
               method: options.method || 'GET',
               url: options.url,
@@ -619,10 +619,10 @@ export const startNetworkMonitoringTool = defineTool({
               timestamp: new Date().toISOString()
             });
 
-            // 包装success回调
+            // Wrap success callback
             const originalSuccess = options.success;
             options.success = function(res: any) {
-              console.log('[MCP-DEBUG] 🟢 wx.request 成功回调:', {
+              console.log('[MCP-DEBUG] 🟢 wx.request success callback:', {
                 requestId: requestId,
                 statusCode: res.statusCode,
                 duration: Date.now() - startTime
@@ -645,15 +645,15 @@ export const startNetworkMonitoringTool = defineTool({
               });
 
               // @ts-ignore - wx is available in WeChat miniprogram environment
-              console.log('[MCP-DEBUG] ✅ wx.request 已记录, 当前总数:', wx.__networkLogs.length);
+              console.log('[MCP-DEBUG] ✅ wx.request recorded, current total:', wx.__networkLogs.length);
 
               if (originalSuccess) originalSuccess.call(this, res);
             };
 
-            // 包装fail回调
+            // Wrap fail callback
             const originalFail = options.fail;
             options.fail = function(err: any) {
-              console.log('[MCP-DEBUG] 🔴 wx.request 失败回调:', {
+              console.log('[MCP-DEBUG] 🔴 wx.request fail callback:', {
                 requestId: requestId,
                 error: err.errMsg,
                 duration: Date.now() - startTime
@@ -675,20 +675,20 @@ export const startNetworkMonitoringTool = defineTool({
               });
 
               // @ts-ignore - wx is available in WeChat miniprogram environment
-              console.log('[MCP-DEBUG] ✅ wx.request 错误已记录, 当前总数:', wx.__networkLogs.length);
+              console.log('[MCP-DEBUG] ✅ wx.request error recorded, current total:', wx.__networkLogs.length);
 
               if (originalFail) originalFail.call(this, err);
             };
 
-            // 调用原始方法
+            // Call original method
             return _originalRequest.call(this, options);
           }
         });
 
-        console.log('[MCP-DEBUG] ✅ wx.request 拦截器已安装');
+        console.log('[MCP-DEBUG] ✅ wx.request interceptor installed');
 
-        // 拦截 wx.uploadFile
-        // 关键：先删除getter属性
+        // Intercept wx.uploadFile
+        // Key: First delete getter property
         // @ts-ignore
         delete wx.uploadFile;
         // @ts-ignore
@@ -749,8 +749,8 @@ export const startNetworkMonitoringTool = defineTool({
           }
         });
 
-        // 拦截 wx.downloadFile
-        // 关键：先删除getter属性
+        // Intercept wx.downloadFile
+        // Key: First delete getter property
         // @ts-ignore
         delete wx.downloadFile;
         // @ts-ignore
@@ -804,59 +804,59 @@ export const startNetworkMonitoringTool = defineTool({
           }
         });
 
-        // 标记拦截器已安装
+        // Mark interceptor as installed
         // @ts-ignore
         wx.__networkInterceptorsInstalled = true;
       }, clearExisting);
 
-      // 设置监听状态
+      // Set monitoring state
       context.networkStorage.isMonitoring = true;
       context.networkStorage.startTime = new Date().toISOString();
 
-      response.appendResponseLine('✅ 网络监听已启动（使用增强型拦截）');
-      response.appendResponseLine(`监听开始时间: ${context.networkStorage.startTime}`);
-      response.appendResponseLine(`清除历史记录: ${clearExisting ? '是' : '否'}`);
+      response.appendResponseLine('✅ Network monitoring started (using enhanced interception)');
+      response.appendResponseLine(`Monitoring start time: ${context.networkStorage.startTime}`);
+      response.appendResponseLine(`Clear history: ${clearExisting ? 'Yes' : 'No'}`);
       response.appendResponseLine('');
-      response.appendResponseLine('已拦截以下方法:');
+      response.appendResponseLine('Intercepted methods:');
       response.appendResponseLine('  - wx.request');
       response.appendResponseLine('  - wx.uploadFile');
       response.appendResponseLine('  - wx.downloadFile');
       response.appendResponseLine('');
-      response.appendResponseLine('💡 使用 evaluate() 方式注入，可绕过 Mpx 等框架限制');
-      response.appendResponseLine('   所有网络请求都将被捕获，使用 get_network_requests 查看');
+      response.appendResponseLine('💡 Using evaluate() injection, can bypass Mpx and other framework limitations');
+      response.appendResponseLine('   All network requests will be captured, use get_network_requests to view');
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`启动网络监听失败: ${errorMessage}`);
+      throw new Error(`Failed to start network monitoring: ${errorMessage}`);
     }
   },
 });
 
 /**
- * 停止网络监听工具
+ * Stop network monitoring tool
  *
- * 注意：使用evaluate()注入的拦截器无法完全恢复
- * 只能清除标记，实际拦截器会继续工作
+ * Note: Interceptors injected using evaluate() cannot be fully restored
+ * Can only clear markers, actual interceptors will continue working
  */
 export const stopNetworkMonitoringTool = defineTool({
   name: 'stop_network_monitoring',
-  description: '停止对微信小程序网络请求的监听，恢复原始的网络方法',
+  description: 'Stop monitoring network requests in WeChat miniprogram, restore original network methods',
   schema: z.object({}),
   annotations: {
     audience: ['developers'],
   },
   handler: async (request, response, context) => {
     if (!context.miniProgram) {
-      throw new Error('请先连接到微信开发者工具');
+      throw new Error('Please connect to WeChat DevTools first');
     }
 
     if (!context.networkStorage.isMonitoring) {
-      response.appendResponseLine('网络监听未在运行');
+      response.appendResponseLine('Network monitoring is not running');
       return;
     }
 
     try {
-      // 从小程序环境读取最终的请求数据并清除标记
+      // Read final request data from miniprogram environment and clear marker
       const result = await context.miniProgram.evaluate(function() {
         // @ts-ignore
         const wxObj = typeof wx !== 'undefined' ? wx : null;
@@ -866,61 +866,61 @@ export const stopNetworkMonitoringTool = defineTool({
 
         const logs = wxObj.__networkLogs || [];
 
-        // 清除安装标记（允许重新安装）
-        // 注意：实际的拦截器无法恢复，因为我们使用了Object.defineProperty
-        // 这是evaluate()方式的一个限制，但好处是可以绕过框架缓存
+        // Clear installation marker (allow reinstallation)
+        // Note: Actual interceptors cannot be restored because we used Object.defineProperty
+        // This is a limitation of the evaluate() approach, but the benefit is bypassing framework caching
         wxObj.__networkInterceptorsInstalled = false;
 
         return { logs, success: true };
       });
 
       if (!result.success) {
-        throw new Error('无法访问wx对象');
+        throw new Error('Cannot access wx object');
       }
 
       const logs = result.logs as NetworkRequest[];
 
-      // 更新监听状态
+      // Update monitoring state
       context.networkStorage.isMonitoring = false;
 
-      response.appendResponseLine('✅ 网络监听已停止');
-      response.appendResponseLine(`监听期间收集到 ${logs.length} 个网络请求`);
+      response.appendResponseLine('✅ Network monitoring stopped');
+      response.appendResponseLine(`Collected ${logs.length} network requests during monitoring`);
 
-      // 统计各类型请求数量
+      // Count requests by type
       const stats = logs.reduce((acc, req) => {
         acc[req.type] = (acc[req.type] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
 
       response.appendResponseLine('');
-      response.appendResponseLine('请求类型统计:');
+      response.appendResponseLine('Request type statistics:');
       if (stats.request) response.appendResponseLine(`  - request: ${stats.request}`);
       if (stats.uploadFile) response.appendResponseLine(`  - uploadFile: ${stats.uploadFile}`);
       if (stats.downloadFile) response.appendResponseLine(`  - downloadFile: ${stats.downloadFile}`);
       response.appendResponseLine('');
-      response.appendResponseLine('⚠️ 注意: 拦截器将继续工作（evaluate方式的特性）');
-      response.appendResponseLine('   使用 clear_network_requests 清除数据');
-      response.appendResponseLine('   使用 start_network_monitoring 重新开始记录');
+      response.appendResponseLine('⚠️ Note: Interceptors will continue working (characteristic of evaluate approach)');
+      response.appendResponseLine('   Use clear_network_requests to clear data');
+      response.appendResponseLine('   Use start_network_monitoring to restart recording');
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`停止网络监听失败: ${errorMessage}`);
+      throw new Error(`Failed to stop network monitoring: ${errorMessage}`);
     }
   },
 });
 
 /**
- * 获取网络请求工具
+ * Get network requests tool
  */
 export const getNetworkRequestsTool = defineTool({
   name: 'get_network_requests',
-  description: '获取收集到的网络请求记录，支持按类型、URL、状态过滤',
+  description: 'Retrieve collected network request records, supports filtering by type, URL, and status',
   schema: z.object({
-    type: z.enum(['all', 'request', 'uploadFile', 'downloadFile']).optional().default('all').describe('请求类型过滤'),
-    urlPattern: z.string().optional().describe('URL 匹配模式（支持正则表达式）'),
-    successOnly: z.boolean().optional().default(false).describe('仅返回成功的请求'),
-    limit: z.number().optional().default(50).describe('限制返回条数'),
-    since: z.string().optional().describe('获取指定时间之后的记录，格式：ISO 8601'),
+    type: z.enum(['all', 'request', 'uploadFile', 'downloadFile']).optional().default('all').describe('Request type filter'),
+    urlPattern: z.string().optional().describe('URL matching pattern (supports regular expressions)'),
+    successOnly: z.boolean().optional().default(false).describe('Return only successful requests'),
+    limit: z.number().optional().default(50).describe('Limit number of results'),
+    since: z.string().optional().describe('Get records after specified time, format: ISO 8601'),
   }),
   annotations: {
     audience: ['developers'],
@@ -929,15 +929,15 @@ export const getNetworkRequestsTool = defineTool({
     const { type, urlPattern, successOnly, limit, since } = request.params;
 
     if (!context.miniProgram) {
-      throw new Error('请先连接到微信开发者工具');
+      throw new Error('Please connect to WeChat DevTools first');
     }
 
     if (!context.networkStorage) {
-      throw new Error('网络存储未初始化');
+      throw new Error('Network storage not initialized');
     }
 
     try {
-      // 从小程序环境读取网络请求数据
+      // Read network request data from miniprogram environment
       const logs: NetworkRequest[] = await context.miniProgram.evaluate(function() {
         // @ts-ignore - wx is available in WeChat miniprogram environment
         const wxObj = typeof wx !== 'undefined' ? wx : null;
@@ -947,31 +947,31 @@ export const getNetworkRequestsTool = defineTool({
       const sinceTime = since ? new Date(since) : null;
       const urlRegex = urlPattern ? new RegExp(urlPattern) : null;
 
-      // 过滤函数
+      // Filter functions
       const filters = [
-        // 过滤无效记录（type='response' 或 url为空/undefined）
+        // Filter invalid records (type='response' or url is empty/undefined)
         (req: NetworkRequest) => {
-          // 过滤掉 type='response' 的记录（不应该存在）
+          // Filter out type='response' records (should not exist)
           if (req.type === 'response' as any) {
             return false;
           }
-          // 过滤掉 URL 为空或 'undefined' 的记录
+          // Filter out records with empty or 'undefined' URL
           if (!req.url || req.url === 'undefined') {
             return false;
           }
-          // 过滤掉 ID 为空或 'N/A' 的记录
+          // Filter out records with empty or 'N/A' ID
           if (!req.id || req.id === 'N/A') {
             return false;
           }
           return true;
         },
-        // 类型过滤
+        // Type filter
         (req: NetworkRequest) => type === 'all' || req.type === type,
-        // 时间过滤
+        // Time filter
         (req: NetworkRequest) => !sinceTime || new Date(req.timestamp) >= sinceTime,
-        // URL 过滤
+        // URL filter
         (req: NetworkRequest) => !urlRegex || urlRegex.test(req.url),
-        // 成功状态过滤
+        // Success status filter
         (req: NetworkRequest) => !successOnly || req.success,
       ];
 
@@ -979,27 +979,27 @@ export const getNetworkRequestsTool = defineTool({
         .filter(req => filters.every(filter => filter(req)))
         .slice(-limit);
 
-      // 生成响应
-      response.appendResponseLine('=== 网络请求记录 ===');
-      response.appendResponseLine(`监听状态: ${context.networkStorage.isMonitoring ? '运行中' : '已停止'}`);
-      response.appendResponseLine(`监听开始时间: ${context.networkStorage.startTime || '未设置'}`);
-      response.appendResponseLine(`总请求数: ${logs.length}`);
-      response.appendResponseLine(`过滤后: ${filteredRequests.length} 条`);
+      // Generate response
+      response.appendResponseLine('=== Network Request Records ===');
+      response.appendResponseLine(`Monitoring status: ${context.networkStorage.isMonitoring ? 'Running' : 'Stopped'}`);
+      response.appendResponseLine(`Monitoring start time: ${context.networkStorage.startTime || 'Not set'}`);
+      response.appendResponseLine(`Total requests: ${logs.length}`);
+      response.appendResponseLine(`After filtering: ${filteredRequests.length} items`);
       response.appendResponseLine('');
 
       if (filteredRequests.length === 0) {
-        response.appendResponseLine('暂无符合条件的网络请求记录');
+        response.appendResponseLine('No network request records matching the criteria');
         return;
       }
 
     filteredRequests.forEach((req, index) => {
-      response.appendResponseLine(`--- 请求 ${index + 1} ---`);
+      response.appendResponseLine(`--- Request ${index + 1} ---`);
       response.appendResponseLine(`ID: ${req.id || 'N/A'}`);
-      response.appendResponseLine(`类型: ${req.type}`);
+      response.appendResponseLine(`Type: ${req.type}`);
 
-      // 过滤掉旧的、无效的记录
+      // Filter out old, invalid records
       if (!req.url || req.url === 'undefined') {
-        response.appendResponseLine(`⚠️ 无效记录（可能是旧数据）`);
+        response.appendResponseLine(`⚠️ Invalid record (possibly old data)`);
         response.appendResponseLine('');
         return;
       }
@@ -1007,53 +1007,53 @@ export const getNetworkRequestsTool = defineTool({
       response.appendResponseLine(`URL: ${req.url}`);
 
       if (req.method) {
-        response.appendResponseLine(`方法: ${req.method}`);
+        response.appendResponseLine(`Method: ${req.method}`);
       }
 
-      // 优化的状态判断逻辑
+      // Optimized status judgment logic
       const isPending = req.pending === true;
       const isCompleted = req.pending === false;
       const isSuccess = req.success === true;
       const isFailed = req.success === false;
 
       if (isPending) {
-        response.appendResponseLine(`状态: ⏳ 请求中（未收到响应）`);
+        response.appendResponseLine(`Status: ⏳ Requesting (no response received)`);
       } else if (isCompleted) {
         if (isSuccess) {
-          response.appendResponseLine(`状态: ✅ 成功`);
+          response.appendResponseLine(`Status: ✅ Success`);
         } else if (isFailed) {
-          response.appendResponseLine(`状态: ❌ 失败`);
+          response.appendResponseLine(`Status: ❌ Failed`);
         } else {
-          response.appendResponseLine(`状态: ⚠️ 未知（success=${req.success}）`);
+          response.appendResponseLine(`Status: ⚠️ Unknown (success=${req.success})`);
         }
       } else {
-        // 兼容旧格式（wx.request等，没有pending字段）
+        // Compatible with old format (wx.request etc., no pending field)
         if (isSuccess) {
-          response.appendResponseLine(`状态: ✅ 成功`);
+          response.appendResponseLine(`Status: ✅ Success`);
         } else if (isFailed) {
-          response.appendResponseLine(`状态: ❌ 失败`);
+          response.appendResponseLine(`Status: ❌ Failed`);
         } else {
-          response.appendResponseLine(`状态: ⚠️ 未知状态`);
+          response.appendResponseLine(`Status: ⚠️ Unknown status`);
         }
       }
 
       if (req.statusCode) {
-        response.appendResponseLine(`状态码: ${req.statusCode}`);
+        response.appendResponseLine(`Status code: ${req.statusCode}`);
       }
 
       if (req.duration !== undefined) {
-        response.appendResponseLine(`耗时: ${req.duration}ms`);
+        response.appendResponseLine(`Duration: ${req.duration}ms`);
       }
 
-      response.appendResponseLine(`时间: ${req.timestamp}`);
+      response.appendResponseLine(`Time: ${req.timestamp}`);
 
       if (req.source) {
-        response.appendResponseLine(`来源: ${req.source}`);
+        response.appendResponseLine(`Source: ${req.source}`);
       }
 
-      // === 请求信息 ===
+      // === Request information ===
       if (req.headers && Object.keys(req.headers).length > 0) {
-        response.appendResponseLine(`请求头: ${JSON.stringify(req.headers)}`);
+        response.appendResponseLine(`Request headers: ${JSON.stringify(req.headers)}`);
       }
 
       if (req.data) {
@@ -1063,14 +1063,14 @@ export const getNetworkRequestsTool = defineTool({
         const truncatedData = dataStr.length > 200
           ? dataStr.substring(0, 200) + '...'
           : dataStr;
-        response.appendResponseLine(`请求数据: ${truncatedData}`);
+        response.appendResponseLine(`Request data: ${truncatedData}`);
       }
 
       if (req.params) {
-        response.appendResponseLine(`请求参数: ${JSON.stringify(req.params)}`);
+        response.appendResponseLine(`Request params: ${JSON.stringify(req.params)}`);
       }
 
-      // === 响应信息 ===
+      // === Response information ===
       if (req.response) {
         const respStr = typeof req.response === 'string'
           ? req.response
@@ -1078,45 +1078,45 @@ export const getNetworkRequestsTool = defineTool({
         const truncatedResp = respStr.length > 200
           ? respStr.substring(0, 200) + '...'
           : respStr;
-        response.appendResponseLine(`响应数据: ${truncatedResp}`);
+        response.appendResponseLine(`Response data: ${truncatedResp}`);
       }
 
       if (req.responseHeaders && Object.keys(req.responseHeaders).length > 0) {
-        response.appendResponseLine(`响应头: ${JSON.stringify(req.responseHeaders)}`);
+        response.appendResponseLine(`Response headers: ${JSON.stringify(req.responseHeaders)}`);
       }
 
       if (req.error) {
-        response.appendResponseLine(`错误信息: ${req.error}`);
+        response.appendResponseLine(`Error message: ${req.error}`);
       }
 
       if (req.completedAt) {
-        response.appendResponseLine(`完成时间: ${req.completedAt}`);
+        response.appendResponseLine(`Completed at: ${req.completedAt}`);
       }
 
       response.appendResponseLine('');
       });
 
-      response.appendResponseLine('=== 获取完成 ===');
+      response.appendResponseLine('=== Retrieval completed ===');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`获取网络请求失败: ${errorMessage}`);
+      throw new Error(`Failed to retrieve network requests: ${errorMessage}`);
     }
   },
 });
 
 /**
- * 诊断拦截器状态工具 - 用于调试
+ * Diagnose interceptor status tool - for debugging
  */
 export const diagnoseInterceptorTool = defineTool({
   name: 'diagnose_interceptor',
-  description: '诊断网络拦截器安装状态和运行情况',
+  description: 'Diagnose network interceptor installation status and runtime status',
   schema: z.object({}),
   annotations: {
     audience: ['developers'],
   },
   handler: async (request, response, context) => {
     if (!context.miniProgram) {
-      throw new Error('请先连接到微信开发者工具');
+      throw new Error('Please connect to WeChat DevTools first');
     }
 
     try {
@@ -1124,9 +1124,9 @@ export const diagnoseInterceptorTool = defineTool({
         // @ts-ignore - wx is available in WeChat miniprogram environment
         const wxObj = typeof wx !== 'undefined' ? wx : null;
 
-        // 测试console.log
-        console.log('[INTERCEPTOR-DIAGNOSE] === 开始诊断拦截器 ===');
-        console.log('[INTERCEPTOR-DIAGNOSE] wx对象存在:', !!wxObj);
+        // Test console.log
+        console.log('[INTERCEPTOR-DIAGNOSE] === Starting interceptor diagnosis ===');
+        console.log('[INTERCEPTOR-DIAGNOSE] wx object exists:', !!wxObj);
 
         // @ts-ignore - getApp is available in WeChat miniprogram environment
         const hasGetApp = typeof getApp !== 'undefined';
@@ -1151,49 +1151,49 @@ export const diagnoseInterceptorTool = defineTool({
           networkLogs: wxObj && wxObj.__networkLogs ? wxObj.__networkLogs.slice(-5) : [],
         };
 
-        console.log('[INTERCEPTOR-DIAGNOSE] 诊断信息:', JSON.stringify(diagnosticInfo, null, 2));
-        console.log('[INTERCEPTOR-DIAGNOSE] === 诊断完成 ===');
+        console.log('[INTERCEPTOR-DIAGNOSE] Diagnostic info:', JSON.stringify(diagnosticInfo, null, 2));
+        console.log('[INTERCEPTOR-DIAGNOSE] === Diagnosis completed ===');
 
         return diagnosticInfo;
       });
 
-      response.appendResponseLine('=== 拦截器诊断结果 ===\n');
-      response.appendResponseLine(`环境检查:`);
-      response.appendResponseLine(`  wx对象: ${result.environment.hasWx ? '✅' : '❌'}`);
+      response.appendResponseLine('=== Interceptor Diagnosis Results ===\n');
+      response.appendResponseLine(`Environment check:`);
+      response.appendResponseLine(`  wx object: ${result.environment.hasWx ? '✅' : '❌'}`);
       response.appendResponseLine(`  getApp: ${result.environment.hasGetApp ? '✅' : '❌'}`);
       response.appendResponseLine('');
-      response.appendResponseLine(`拦截器状态:`);
-      response.appendResponseLine(`  已安装: ${result.interceptor.installed ? '✅' : '❌'}`);
-      response.appendResponseLine(`  日志数组: ${result.interceptor.hasNetworkLogs ? '✅' : '❌'}`);
-      response.appendResponseLine(`  记录数量: ${result.interceptor.networkLogsLength}`);
+      response.appendResponseLine(`Interceptor status:`);
+      response.appendResponseLine(`  Installed: ${result.interceptor.installed ? '✅' : '❌'}`);
+      response.appendResponseLine(`  Log array: ${result.interceptor.hasNetworkLogs ? '✅' : '❌'}`);
+      response.appendResponseLine(`  Record count: ${result.interceptor.networkLogsLength}`);
       response.appendResponseLine('');
-      response.appendResponseLine(`Mpx框架:`);
-      response.appendResponseLine(`  getApp可用: ${result.mpx.hasGetApp ? '✅' : '❌'}`);
-      response.appendResponseLine(`  App实例: ${result.mpx.hasApp ? '✅' : '❌'}`);
+      response.appendResponseLine(`Mpx framework:`);
+      response.appendResponseLine(`  getApp available: ${result.mpx.hasGetApp ? '✅' : '❌'}`);
+      response.appendResponseLine(`  App instance: ${result.mpx.hasApp ? '✅' : '❌'}`);
       response.appendResponseLine(`  $xfetch: ${result.mpx.has$xfetch ? '✅' : '❌'}`);
       response.appendResponseLine('');
 
       if (result.networkLogs && result.networkLogs.length > 0) {
-        response.appendResponseLine(`最近${result.networkLogs.length}条网络日志:`);
+        response.appendResponseLine(`Recent ${result.networkLogs.length} network logs:`);
         result.networkLogs.forEach((log: any, index: number) => {
           response.appendResponseLine(`  ${index + 1}. [${log.type}] ${log.url || log.method}`);
         });
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`诊断失败: ${errorMessage}`);
+      throw new Error(`Diagnosis failed: ${errorMessage}`);
     }
   },
 });
 
 /**
- * 清除网络请求工具
+ * Clear network requests tool
  */
 export const clearNetworkRequestsTool = defineTool({
   name: 'clear_network_requests',
-  description: '清除已收集的网络请求记录',
+  description: 'Clear collected network request records',
   schema: z.object({
-    type: z.enum(['all', 'request', 'uploadFile', 'downloadFile']).optional().default('all').describe('清除的请求类型'),
+    type: z.enum(['all', 'request', 'uploadFile', 'downloadFile']).optional().default('all').describe('Type of requests to clear'),
   }),
   annotations: {
     audience: ['developers'],
@@ -1202,22 +1202,22 @@ export const clearNetworkRequestsTool = defineTool({
     const { type } = request.params;
 
     if (!context.miniProgram) {
-      throw new Error('请先连接到微信开发者工具');
+      throw new Error('Please connect to WeChat DevTools first');
     }
 
     if (!context.networkStorage) {
-      throw new Error('网络存储未初始化');
+      throw new Error('Network storage not initialized');
     }
 
     try {
-      // 获取当前数量
+      // Get current count
       const beforeCount: number = await context.miniProgram.evaluate(function() {
         // @ts-ignore - wx is available in WeChat miniprogram environment
         const wxObj = typeof wx !== 'undefined' ? wx : null;
         return (wxObj?.__networkLogs || []).length;
       });
 
-      // 在小程序环境清除数据
+      // Clear data in miniprogram environment
       const afterCount: number = await context.miniProgram.evaluate(function(typeToDelete: string) {
         // @ts-ignore - wx is available in WeChat miniprogram environment
         const wxObj = typeof wx !== 'undefined' ? wx : null;
@@ -1236,13 +1236,13 @@ export const clearNetworkRequestsTool = defineTool({
 
       const clearedCount = beforeCount - afterCount;
 
-      response.appendResponseLine('✅ 网络请求记录清除完成');
-      response.appendResponseLine(`清除类型: ${type}`);
-      response.appendResponseLine(`清除数量: ${clearedCount} 条`);
-      response.appendResponseLine(`剩余数量: ${afterCount} 条`);
+      response.appendResponseLine('✅ Network request records cleared successfully');
+      response.appendResponseLine(`Cleared type: ${type}`);
+      response.appendResponseLine(`Cleared count: ${clearedCount} items`);
+      response.appendResponseLine(`Remaining count: ${afterCount} items`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`清除网络请求失败: ${errorMessage}`);
+      throw new Error(`Failed to clear network requests: ${errorMessage}`);
     }
   },
 });

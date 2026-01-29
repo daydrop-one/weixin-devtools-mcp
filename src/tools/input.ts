@@ -1,6 +1,6 @@
 /**
- * 输入交互工具
- * 负责页面元素的点击、填写等交互操作
+ * Input Interaction Tools
+ * Handles page element click, fill and other interaction operations
  */
 
 import { z } from 'zod';
@@ -17,14 +17,14 @@ import {
 } from '../tools.js';
 
 /**
- * 点击页面元素
+ * Click page element
  */
 export const clickTool = defineTool({
   name: 'click',
-  description: '点击指定uid的页面元素',
+  description: 'Click page element by uid',
   schema: z.object({
-    uid: z.string().describe('页面快照中元素的唯一标识符'),
-    dblClick: z.boolean().optional().default(false).describe('是否为双击，默认false'),
+    uid: z.string().describe('Unique identifier of element in page snapshot'),
+    dblClick: z.boolean().optional().default(false).describe('Whether to double-click, default false'),
   }),
   annotations: {
     audience: ['developers'],
@@ -32,58 +32,58 @@ export const clickTool = defineTool({
   handler: async (request, response, context) => {
     const { uid, dblClick } = request.params;
 
-    // 使用统一的元素获取方法
+    // Use unified element retrieval method
     const element = await context.getElementByUid(uid);
 
-    // 记录点击前的页面路径
+    // Record page path before click
     const beforePath = await context.currentPage.path;
-    console.log(`[Click] 点击前页面: ${beforePath}`);
+    console.log(`[Click] Page before click: ${beforePath}`);
 
-    // 执行点击操作
+    // Execute click operation
     await element.tap();
-    console.log(`[Click] 已执行 tap() 操作`);
+    console.log(`[Click] Executed tap() operation`);
 
-    // 如果是双击，再点击一次
+    // If double-click, click again
     if (dblClick) {
       await new Promise(resolve => setTimeout(resolve, 100));
       await element.tap();
-      console.log(`[Click] 已执行第二次 tap() (双击)`);
+      console.log(`[Click] Executed second tap() (double-click)`);
     }
 
-    // 等待页面响应
+    // Wait for page response
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    // 记录点击后的页面路径
+    // Record page path after click
     try {
       const afterPath = await context.currentPage.path;
-      console.log(`[Click] 点击后页面: ${afterPath}`);
+      console.log(`[Click] Page after click: ${afterPath}`);
       if (beforePath !== afterPath) {
-        console.log(`[Click] ✅ 页面已切换: ${beforePath} → ${afterPath}`);
+        console.log(`[Click] ✅ Page switched: ${beforePath} → ${afterPath}`);
       }
     } catch (error) {
-      console.warn(`[Click] 无法获取点击后的页面路径:`, error);
+      console.warn(`[Click] Unable to get page path after click:`, error);
     }
 
-    const action = dblClick ? '双击' : '点击';
-    response.appendResponseLine(`${action}元素成功`);
+    const action = dblClick ? 'Double-clicked' : 'Clicked';
+    response.appendResponseLine(`${action} element successfully`);
     response.appendResponseLine(`UID: ${uid}`);
 
-    // 点击后可能页面发生变化，建议包含快照
+    // Page may have changed after click, suggest including snapshot
     response.setIncludeSnapshot(true);
   },
 });
 
 /**
- * 向元素输入文本
+ * Input text into element
  */
 export const inputTextTool = defineTool({
   name: 'input_text',
-  description: '向input/textarea元素输入文本',
+  description: 'Input text into input/textarea element',
   schema: z.object({
-    uid: z.string().describe('页面快照中元素的唯一标识符'),
-    text: z.string().describe('要输入的文本内容'),
-    clear: z.boolean().optional().default(false).describe('是否先清空元素内容，默认false'),
-    append: z.boolean().optional().default(false).describe('是否追加到现有内容，默认false'),
+    uid: z.string().describe('Unique identifier of element in page snapshot'),
+    text: z.string().describe('Text content to input'),
+    clear: z.boolean().optional().default(false).describe('Whether to clear element content first, default false'),
+    append: z.boolean().optional().default(false).describe('Whether to append to existing content, default false'),
   }),
   annotations: {
     audience: ['developers'],
@@ -91,48 +91,48 @@ export const inputTextTool = defineTool({
   handler: async (request, response, context) => {
     const { uid, text, clear, append } = request.params;
 
-    // 使用统一的元素获取方法
+    // Use unified element retrieval method
     const element = await context.getElementByUid(uid);
 
-    // 处理输入逻辑
+    // Handle input logic
     if (clear) {
-      // 清空并输入
+      // Clear and input
       element.value = '';
       await element.input(text);
-      console.log(`[InputText] 清空并输入: ${text}`);
+      console.log(`[InputText] Cleared and input: ${text}`);
     } else if (append) {
-      // 追加内容
+      // Append content
       const currentValue = element.value || '';
       await element.input(currentValue + text);
-      console.log(`[InputText] 追加文本: ${text}`);
+      console.log(`[InputText] Appended text: ${text}`);
     } else {
-      // 直接输入
+      // Direct input
       await element.input(text);
-      console.log(`[InputText] 输入文本: ${text}`);
+      console.log(`[InputText] Input text: ${text}`);
     }
 
-    let action = '输入文本';
-    if (clear) action = '清空并输入文本';
-    if (append) action = '追加文本';
+    let action = 'Input text';
+    if (clear) action = 'Cleared and input text';
+    if (append) action = 'Appended text';
 
-    response.appendResponseLine(`${action}成功`);
+    response.appendResponseLine(`${action} successfully`);
     response.appendResponseLine(`UID: ${uid}`);
-    response.appendResponseLine(`内容: ${text}`);
+    response.appendResponseLine(`Content: ${text}`);
 
-    // 输入后页面可能发生变化
+    // Page may have changed after input
     response.setIncludeSnapshot(true);
   },
 });
 
 /**
- * 获取元素值
+ * Get element value
  */
 export const getValueTool = defineTool({
   name: 'get_value',
-  description: '获取元素的值或文本内容',
+  description: 'Get element value or text content',
   schema: z.object({
-    uid: z.string().describe('页面快照中元素的唯一标识符'),
-    attribute: z.string().optional().describe('要获取的属性名，不指定则获取value或text'),
+    uid: z.string().describe('Unique identifier of element in page snapshot'),
+    attribute: z.string().optional().describe('Attribute name to get, if not specified gets value or text'),
   }),
   annotations: {
     audience: ['developers'],
@@ -141,38 +141,38 @@ export const getValueTool = defineTool({
     const { uid, attribute } = request.params;
 
     if (!context.currentPage) {
-      throw new Error('请先获取当前页面');
+      throw new Error('Please get current page first');
     }
 
     try {
       const options: GetValueOptions = { uid, attribute };
       const value = await getElementValue(context.currentPage, context.elementMap, options);
 
-      response.appendResponseLine(`获取元素值成功`);
+      response.appendResponseLine(`Get element value successfully`);
       response.appendResponseLine(`UID: ${uid}`);
       if (attribute) {
-        response.appendResponseLine(`属性: ${attribute}`);
+        response.appendResponseLine(`Attribute: ${attribute}`);
       }
-      response.appendResponseLine(`值: ${value}`);
+      response.appendResponseLine(`Value: ${value}`);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`获取元素值失败: ${errorMessage}`);
+      response.appendResponseLine(`Failed to get element value: ${errorMessage}`);
       throw error;
     }
   },
 });
 
 /**
- * 设置表单控件值
+ * Set form control value
  */
 export const setFormControlTool = defineTool({
   name: 'set_form_control',
-  description: '设置表单控件的值（如picker、switch、slider等）',
+  description: 'Set value of form controls (such as picker, switch, slider, etc.)',
   schema: z.object({
-    uid: z.string().describe('页面快照中元素的唯一标识符'),
-    value: z.any().describe('要设置的值'),
-    trigger: z.string().optional().default('change').describe('触发的事件类型，默认为change'),
+    uid: z.string().describe('Unique identifier of element in page snapshot'),
+    value: z.any().describe('Value to set'),
+    trigger: z.string().optional().default('change').describe('Event type to trigger, default is change'),
   }),
   annotations: {
     audience: ['developers'],
@@ -181,38 +181,38 @@ export const setFormControlTool = defineTool({
     const { uid, value, trigger } = request.params;
 
     if (!context.currentPage) {
-      throw new Error('请先获取当前页面');
+      throw new Error('Please get current page first');
     }
 
     try {
       const options: FormControlOptions = { uid, value, trigger };
       await setFormControl(context.currentPage, context.elementMap, options);
 
-      response.appendResponseLine(`设置表单控件成功`);
+      response.appendResponseLine(`Set form control successfully`);
       response.appendResponseLine(`UID: ${uid}`);
-      response.appendResponseLine(`值: ${JSON.stringify(value)}`);
-      response.appendResponseLine(`事件: ${trigger}`);
+      response.appendResponseLine(`Value: ${JSON.stringify(value)}`);
+      response.appendResponseLine(`Event: ${trigger}`);
 
-      // 设置后页面可能发生变化
+      // Page may have changed after setting
       response.setIncludeSnapshot(true);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`设置表单控件失败: ${errorMessage}`);
+      response.appendResponseLine(`Failed to set form control: ${errorMessage}`);
       throw error;
     }
   },
 });
 
 /**
- * 选择器选择选项（picker专用）
+ * Picker select option (picker-specific)
  */
 export const selectPickerTool = defineTool({
   name: 'select_picker',
-  description: '选择picker控件的选项',
+  description: 'Select option in picker control',
   schema: z.object({
-    uid: z.string().describe('picker元素的唯一标识符'),
-    value: z.union([z.number(), z.string(), z.array(z.any())]).describe('选项值，可以是索引、文本或多选数组'),
+    uid: z.string().describe('Unique identifier of picker element'),
+    value: z.union([z.number(), z.string(), z.array(z.any())]).describe('Option value, can be index, text or multi-select array'),
   }),
   annotations: {
     audience: ['developers'],
@@ -221,37 +221,37 @@ export const selectPickerTool = defineTool({
     const { uid, value } = request.params;
 
     if (!context.currentPage) {
-      throw new Error('请先获取当前页面');
+      throw new Error('Please get current page first');
     }
 
     try {
       const options: FormControlOptions = { uid, value, trigger: 'change' };
       await setFormControl(context.currentPage, context.elementMap, options);
 
-      response.appendResponseLine(`选择picker选项成功`);
+      response.appendResponseLine(`Selected picker option successfully`);
       response.appendResponseLine(`UID: ${uid}`);
-      response.appendResponseLine(`选项: ${JSON.stringify(value)}`);
+      response.appendResponseLine(`Option: ${JSON.stringify(value)}`);
 
-      // 选择后页面可能发生变化
+      // Page may have changed after selection
       response.setIncludeSnapshot(true);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`选择picker选项失败: ${errorMessage}`);
+      response.appendResponseLine(`Failed to select picker option: ${errorMessage}`);
       throw error;
     }
   },
 });
 
 /**
- * 切换开关状态（switch专用）
+ * Toggle switch state (switch-specific)
  */
 export const toggleSwitchTool = defineTool({
   name: 'toggle_switch',
-  description: '切换switch开关的状态',
+  description: 'Toggle switch state',
   schema: z.object({
-    uid: z.string().describe('switch元素的唯一标识符'),
-    checked: z.boolean().describe('开关状态，true为开启，false为关闭'),
+    uid: z.string().describe('Unique identifier of switch element'),
+    checked: z.boolean().describe('Switch state, true for on, false for off'),
   }),
   annotations: {
     audience: ['developers'],
@@ -260,37 +260,37 @@ export const toggleSwitchTool = defineTool({
     const { uid, checked } = request.params;
 
     if (!context.currentPage) {
-      throw new Error('请先获取当前页面');
+      throw new Error('Please get current page first');
     }
 
     try {
       const options: FormControlOptions = { uid, value: checked, trigger: 'change' };
       await setFormControl(context.currentPage, context.elementMap, options);
 
-      response.appendResponseLine(`切换开关状态成功`);
+      response.appendResponseLine(`Toggled switch state successfully`);
       response.appendResponseLine(`UID: ${uid}`);
-      response.appendResponseLine(`状态: ${checked ? '开启' : '关闭'}`);
+      response.appendResponseLine(`State: ${checked ? 'On' : 'Off'}`);
 
-      // 切换后页面可能发生变化
+      // Page may have changed after toggle
       response.setIncludeSnapshot(true);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`切换开关状态失败: ${errorMessage}`);
+      response.appendResponseLine(`Failed to toggle switch state: ${errorMessage}`);
       throw error;
     }
   },
 });
 
 /**
- * 设置滑块值（slider专用）
+ * Set slider value (slider-specific)
  */
 export const setSliderTool = defineTool({
   name: 'set_slider',
-  description: '设置slider滑块的值',
+  description: 'Set slider value',
   schema: z.object({
-    uid: z.string().describe('slider元素的唯一标识符'),
-    value: z.number().describe('滑块值'),
+    uid: z.string().describe('Unique identifier of slider element'),
+    value: z.number().describe('Slider value'),
   }),
   annotations: {
     audience: ['developers'],
@@ -299,23 +299,23 @@ export const setSliderTool = defineTool({
     const { uid, value } = request.params;
 
     if (!context.currentPage) {
-      throw new Error('请先获取当前页面');
+      throw new Error('Please get current page first');
     }
 
     try {
       const options: FormControlOptions = { uid, value, trigger: 'change' };
       await setFormControl(context.currentPage, context.elementMap, options);
 
-      response.appendResponseLine(`设置滑块值成功`);
+      response.appendResponseLine(`Set slider value successfully`);
       response.appendResponseLine(`UID: ${uid}`);
-      response.appendResponseLine(`值: ${value}`);
+      response.appendResponseLine(`Value: ${value}`);
 
-      // 设置后页面可能发生变化
+      // Page may have changed after setting
       response.setIncludeSnapshot(true);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`设置滑块值失败: ${errorMessage}`);
+      response.appendResponseLine(`Failed to set slider value: ${errorMessage}`);
       throw error;
     }
   },

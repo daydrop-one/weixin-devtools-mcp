@@ -1,29 +1,29 @@
 /**
- * 导航功能集成测试
+ * Navigation Feature Integration Tests
  *
- * 测试真实的页面导航功能，验证 API 修复是否正确工作
+ * Test real page navigation functionality, verify API fixes work correctly
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import automator from 'miniprogram-automator';
 
-// 仅在设置了 RUN_INTEGRATION_TESTS 环境变量时运行集成测试
+// Only run integration tests when RUN_INTEGRATION_TESTS environment variable is set
 const shouldRunIntegration = process.env.RUN_INTEGRATION_TESTS === 'true';
 
-describe.skipIf(!shouldRunIntegration)('导航功能集成测试', () => {
+describe.skipIf(!shouldRunIntegration)('Navigation Feature Integration Tests', () => {
   let miniProgram: any;
   const projectPath = '/Users/didi/workspace/wooPro/weixin-devtools-mcp/playground/wx';
 
   beforeAll(async () => {
     try {
-      // 连接到微信开发者工具
+      // Connect to WeChat DevTools
       miniProgram = await automator.connect({
         wsEndpoint: 'ws://localhost:9422',
       });
 
-      console.log('✅ 已连接到微信开发者工具');
+      console.log('✅ Connected to WeChat DevTools');
     } catch (error) {
-      console.error('❌ 连接失败:', error);
+      console.error('❌ Connection failed:', error);
       throw error;
     }
   }, 30000);

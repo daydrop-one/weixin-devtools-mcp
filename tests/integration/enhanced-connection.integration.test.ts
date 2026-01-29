@@ -1,8 +1,8 @@
 /**
- * 增强连接功能集成测试
- * 专门测试新的 connectDevtoolsEnhanced 功能
+ * Enhanced Connection Feature Integration Tests
+ * Specifically test new connectDevtoolsEnhanced functionality
  *
- * 运行方式：
+ * How to run:
  * RUN_INTEGRATION_TESTS=true npm test -- tests/enhanced-connection.integration.test.ts
  */
 
@@ -22,62 +22,62 @@ import {
   withTimeout
 } from '../utils/test-utils.js'
 
-// 环境检查：只有显式开启才运行集成测试
+// Environment check: only run integration tests if explicitly enabled
 const shouldRunIntegrationTests = process.env.RUN_INTEGRATION_TESTS === 'true'
 
-// 测试配置
+// Test configuration
 const TEST_PROJECT_PATH = '/Users/didi/workspace/wooPro/weixin-devtools-mcp/playground/wx'
 const TEST_CLI_PATH = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
 
-// 分配的端口池
+// Allocated port pool
 let availablePorts: number[] = []
 let portIndex = 0
 
-// 获取下一个可用端口
+// Get next available port
 function getNextPort(): number {
   if (portIndex >= availablePorts.length) {
-    throw new Error('可用端口已用完，请增加端口分配数量')
+    throw new Error('Available ports exhausted, please increase port allocation')
   }
   return availablePorts[portIndex++]
 }
 
-describe.skipIf(!shouldRunIntegrationTests)('增强连接功能集成测试', () => {
+describe.skipIf(!shouldRunIntegrationTests)('Enhanced Connection Feature Integration Tests', () => {
   let connectedResources: DetailedConnectResult | null = null
 
   beforeAll(async () => {
-    console.log('🔧 检查增强连接功能集成测试环境...')
+    console.log('🔧 Checking enhanced connection feature integration test environment...')
 
-    // 检查环境是否满足测试要求
+    // Check if environment meets test requirements
     const envCheck = await checkIntegrationTestEnvironment(TEST_PROJECT_PATH, TEST_CLI_PATH)
 
     if (!envCheck.isReady) {
-      console.error('❌ 集成测试环境不满足要求:')
+      console.error('❌ Integration test environment does not meet requirements:')
       envCheck.issues.forEach(issue => console.error(`  • ${issue}`))
       return
     }
 
-    console.log('✅ 环境检查通过')
+    console.log('✅ Environment check passed')
 
-    // 清理冲突实例
-    console.log('🧹 检查并清理冲突实例...')
+    // Clean up conflicting instances
+    console.log('🧹 Checking and cleaning up conflicting instances...')
     await cleanupConflictingWeChatInstances(TEST_PROJECT_PATH, TEST_CLI_PATH)
 
-    // 分配足够的端口供测试使用
+    // Allocate sufficient ports for testing
     try {
-      console.log('🔌 分配测试端口...')
-      availablePorts = await allocatePorts(8) // 分配8个端口用于多种测试
-      console.log(`✅ 已分配端口: ${availablePorts.join(', ')}`)
+      console.log('🔌 Allocating test ports...')
+      availablePorts = await allocatePorts(8) // Allocate 8 ports for various tests
+      console.log(`✅ Ports allocated: ${availablePorts.join(', ')}`)
     } catch (error) {
-      console.error('❌ 端口分配失败:', error)
+      console.error('❌ Port allocation failed:', error)
       throw error
     }
   })
 
   afterEach(async () => {
-    // 确保每次测试后都清理资源
+    // Ensure resources are cleaned up after each test
     if (connectedResources?.miniProgram) {
       await safeCleanup(async () => {
-        console.log('正在清理微信开发者工具连接...')
+        console.log('Cleaning up WeChat DevTools connection...')
         await connectedResources!.miniProgram.close()
         console.log('连接已成功关闭')
         connectedResources = null

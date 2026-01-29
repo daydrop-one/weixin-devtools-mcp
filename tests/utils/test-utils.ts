@@ -1,6 +1,6 @@
 /**
- * 集成测试工具函数
- * 提供端口管理、环境验证等功能
+ * Integration test utility functions
+ * Provides port management, environment verification, and other functionality
  */
 
 import { createServer } from 'net'
@@ -9,7 +9,7 @@ import { access, constants } from 'fs/promises'
 import { execSync } from 'child_process'
 
 /**
- * 检查端口是否被微信开发者工具占用
+ * Check if port is occupied by WeChat DevTools
  */
 export function isPortOccupiedByWeChat(port: number): boolean {
   try {
@@ -21,7 +21,7 @@ export function isPortOccupiedByWeChat(port: number): boolean {
 }
 
 /**
- * 检查端口是否可用（不被任何进程占用）
+ * Check if port is available (not occupied by any process)
  */
 export async function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -40,24 +40,24 @@ export async function isPortAvailable(port: number): Promise<boolean> {
 }
 
 /**
- * 查找可用端口（避开微信开发者工具占用的端口）
+ * Find available port (avoiding ports occupied by WeChat DevTools)
  */
 export async function findAvailablePort(startPort: number = 9420): Promise<number> {
   let currentPort = startPort
   const skippedPorts: number[] = []
 
-  while (currentPort < startPort + 100) { // 最多尝试100个端口
-    // 检查端口是否被微信开发者工具占用
+  while (currentPort < startPort + 100) { // Try up to 100 ports
+    // Check if port is occupied by WeChat DevTools
     if (isPortOccupiedByWeChat(currentPort)) {
       skippedPorts.push(currentPort)
       currentPort++
       continue
     }
 
-    // 检查端口是否真正可用
+    // Check if port is actually available
     if (await isPortAvailable(currentPort)) {
       if (skippedPorts.length > 0) {
-        console.log(`⚠️ 跳过占用端口: [${skippedPorts.join(', ')}]`)
+        console.log(`⚠️ Skipped occupied ports: [${skippedPorts.join(', ')}]`)
       }
       return currentPort
     }

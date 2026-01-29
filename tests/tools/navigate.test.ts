@@ -1,11 +1,11 @@
 /**
- * navigate.ts 工具测试
- * 测试页面导航工具的各种场景
+ * navigate.ts Tool Tests
+ * Test various scenarios of page navigation tools
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-// Mock tools.js 中的导航函数
+// Mock navigation functions in tools.js
 vi.mock('../../src/tools.js', () => ({
   navigateToPage: vi.fn(),
   navigateBack: vi.fn(),
@@ -14,7 +14,7 @@ vi.mock('../../src/tools.js', () => ({
   reLaunch: vi.fn()
 }))
 
-// 导入被测试的工具
+// Import tools being tested
 import {
   navigateToTool,
   navigateBackTool,
@@ -24,7 +24,7 @@ import {
   redirectToTool
 } from '../../src/tools/navigate.js'
 
-// 导入mock的函数用于验证
+// Import mock functions for verification
 import {
   navigateToPage,
   navigateBack,
@@ -33,26 +33,26 @@ import {
   reLaunch
 } from '../../src/tools.js'
 
-describe('navigate.ts 工具测试', () => {
-  // 创建测试用的页面对象
+describe('navigate.ts Tool Tests', () => {
+  // Create mock page object for testing
   const mockCurrentPage = {
     path: '/pages/home/index'
   }
 
-  // 创建测试用的MiniProgram对象
+  // Create mock MiniProgram object for testing
   const mockMiniProgram = {
     currentPage: vi.fn(),
     redirectTo: vi.fn()
   }
 
-  // 创建测试用的上下文对象
+  // Create mock context object for testing
   const mockContext = {
     miniProgram: mockMiniProgram,
     currentPage: mockCurrentPage,
     elementMap: new Map()
   } as any
 
-  // 创建测试用的请求和响应对象
+  // Create mock request and response objects for testing
   const createMockRequest = (params: any) => ({ params })
   const createMockResponse = () => {
     const lines: string[] = []

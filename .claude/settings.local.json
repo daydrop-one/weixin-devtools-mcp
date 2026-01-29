@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(for f in /Users/ah/Projects/DaydropOne/weixin-devtools-mcp/tests/tools/*.test.ts)",
+      "Bash(do)",
+      "Bash(basename:*)",
+      "Bash(done)",
+      "Bash(for file in /Users/ah/Projects/DaydropOne/weixin-devtools-mcp/tests/tools/*.test.ts /Users/ah/Projects/DaydropOne/weixin-devtools-mcp/tests/integration/*.test.ts /Users/ah/Projects/DaydropOne/weixin-devtools-mcp/tests/utils/*.ts)",
+      "Bash(if [ -f \"$file\" ])",
+      "Bash(then)",
+      "Bash(fi)",
+      "Bash(xargs:*)",
+      "Bash(sort git diff --name-only)"
+    ]
+  }
+}

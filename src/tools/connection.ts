@@ -1,6 +1,6 @@
 /**
- * 连接管理工具
- * 负责微信开发者工具的连接和断开
+ * Connection Management Tools
+ * Handles connection and disconnection to WeChat DevTools
  */
 
 import { z } from 'zod';
@@ -8,8 +8,8 @@ import { defineTool, ToolCategories, ConsoleMessage, ExceptionMessage } from './
 import { connectDevtools, connectDevtoolsEnhanced, type ConnectOptions, type EnhancedConnectOptions, DevToolsConnectionError } from '../tools.js';
 
 /**
- * 创建请求拦截器函数
- * 从 network.ts 复制，用于自动启动网络监听
+ * Create request interceptor function
+ * Copied from network.ts for auto-starting network monitoring
  */
 function createRequestInterceptor() {
   return function(this: any, options: any) {
@@ -67,7 +67,7 @@ function createRequestInterceptor() {
 }
 
 /**
- * 创建 uploadFile 拦截器函数
+ * Create uploadFile interceptor function
  */
 function createUploadFileInterceptor() {
   return function(this: any, options: any) {
@@ -131,7 +131,7 @@ function createUploadFileInterceptor() {
 }
 
 /**
- * 创建 downloadFile 拦截器函数
+ * Create downloadFile interceptor function
  */
 function createDownloadFileInterceptor() {
   return function(this: any, options: any) {
@@ -188,16 +188,16 @@ function createDownloadFileInterceptor() {
 }
 
 /**
- * 连接到微信开发者工具（传统版）
+ * Connect to WeChat DevTools (Traditional Version)
  */
 export const connectDevtoolsTool = defineTool({
   name: 'connect_devtools',
-  description: '连接到微信开发者工具（传统模式，兼容性）',
+  description: 'Connect to WeChat DevTools (traditional mode, for compatibility)',
   schema: z.object({
-    projectPath: z.string().describe('小程序项目的绝对路径'),
-    cliPath: z.string().optional().describe('微信开发者工具CLI的绝对路径（可选，默认会自动查找）'),
-    port: z.number().optional().describe('WebSocket端口号（可选，默认自动分配）'),
-    autoAudits: z.boolean().optional().describe('启动时是否开启自动运行体验评分'),
+    projectPath: z.string().describe('Absolute path to the mini program project'),
+    cliPath: z.string().optional().describe('Absolute path to WeChat DevTools CLI (optional, will auto-detect by default)'),
+    port: z.number().optional().describe('WebSocket port number (optional, auto-assigned by default)'),
+    autoAudits: z.boolean().optional().describe('Whether to enable automatic experience scoring on startup'),
   }),
   annotations: {
     audience: ['developers'],
@@ -205,22 +205,22 @@ export const connectDevtoolsTool = defineTool({
   handler: async (request, response, context) => {
     const { projectPath, cliPath, port, autoAudits } = request.params;
 
-    // 检查是否已有活跃连接
+    // Check if there's an active connection
     if (context.miniProgram) {
       try {
-        // 验证连接是否仍然有效
+        // Verify if connection is still valid
         const currentPage = await context.miniProgram.currentPage();
         const pagePath = await currentPage.path;
 
-        // 连接有效，复用现有连接
-        response.appendResponseLine(`✅ 检测到已有活跃连接，复用现有连接`);
-        response.appendResponseLine(`项目路径: ${projectPath}`);
-        response.appendResponseLine(`当前页面: ${pagePath}`);
-        response.appendResponseLine(`说明: 跳过重新连接，使用已建立的连接`);
+        // Connection is valid, reuse existing connection
+        response.appendResponseLine(`✅ Active connection detected, reusing existing connection`);
+        response.appendResponseLine(`Project path: ${projectPath}`);
+        response.appendResponseLine(`Current page: ${pagePath}`);
+        response.appendResponseLine(`Note: Skipping reconnection, using established connection`);
 
         return;
       } catch (error) {
-        // 连接已失效，清空并继续新建连接
+        // Connection is invalid, clear and continue with new connection
         context.miniProgram = null;
         context.currentPage = null;
       }
@@ -236,18 +236,18 @@ export const connectDevtoolsTool = defineTool({
 
       const result = await connectDevtools(options);
 
-      // 更新上下文
+      // Update context
       context.miniProgram = result.miniProgram;
       context.currentPage = result.currentPage;
       context.elementMap.clear();
 
-      // 自动启动console监听
+      // Auto-start console monitoring
       try {
-        // 清除之前的监听器（如果有的话）
+        // Clear previous listeners (if any)
         context.miniProgram.removeAllListeners('console');
         context.miniProgram.removeAllListeners('exception');
 
-        // 启动console监听
+        // Start console monitoring
         context.consoleStorage.isMonitoring = true;
         context.consoleStorage.startTime = new Date().toISOString();
 
@@ -258,10 +258,10 @@ export const connectDevtoolsTool = defineTool({
             timestamp: new Date().toISOString(),
             source: 'miniprogram'
           };
-          // 使用新的 navigations 结构
+          // Use new navigations structure
           const currentSession = context.consoleStorage.navigations[0];
           if (currentSession) {
-            // 分配 msgid（如果有 idGenerator）
+            // Assign msgid (if idGenerator available)
             if (context.consoleStorage.idGenerator) {
               consoleMessage.msgid = context.consoleStorage.idGenerator();
               context.consoleStorage.messageIdMap.set(consoleMessage.msgid, consoleMessage);
@@ -278,10 +278,10 @@ export const connectDevtoolsTool = defineTool({
             timestamp: new Date().toISOString(),
             source: 'miniprogram'
           };
-          // 使用新的 navigations 结构
+          // Use new navigations structure
           const currentSession = context.consoleStorage.navigations[0];
           if (currentSession) {
-            // 分配 msgid（如果有 idGenerator）
+            // Assign msgid (if idGenerator available)
             if (context.consoleStorage.idGenerator) {
               exceptionMessage.msgid = context.consoleStorage.idGenerator();
               context.consoleStorage.messageIdMap.set(exceptionMessage.msgid, exceptionMessage);
@@ -291,15 +291,15 @@ export const connectDevtoolsTool = defineTool({
           console.log(`[Exception]:`, err.message, err.stack);
         });
 
-        response.appendResponseLine(`Console监听已自动启动`);
+        response.appendResponseLine(`Console monitoring started automatically`);
       } catch (consoleError) {
-        response.appendResponseLine(`警告: Console监听启动失败 - ${consoleError instanceof Error ? consoleError.message : String(consoleError)}`);
+        response.appendResponseLine(`Warning: Console monitoring failed to start - ${consoleError instanceof Error ? consoleError.message : String(consoleError)}`);
       }
 
-      // 自动启动网络监听（使用evaluate()方式绕过框架限制）
+      // Auto-start network monitoring (using evaluate() to bypass framework restrictions)
       try {
         if (!context.networkStorage.isMonitoring) {
-          // 使用与network.ts相同的evaluate()注入方式，增加Mpx框架支持
+          // Use same evaluate() injection method as network.ts, with Mpx framework support
           await context.miniProgram.evaluate(function() {
             // @ts-ignore
             if (typeof wx === 'undefined' || wx.__networkInterceptorsInstalled) {
@@ -309,10 +309,10 @@ export const connectDevtoolsTool = defineTool({
             // @ts-ignore
             wx.__networkLogs = wx.__networkLogs || [];
 
-            // Mpx 拦截器已在 tools.ts 的 connectDevtools() 中统一注入
-            // 此处仅保留 wx.request 回退拦截器（用于非 Mpx 框架或直接调用 wx API 的场景）
+            // Mpx interceptors are injected uniformly in connectDevtools() in tools.ts
+            // Only fallback wx.request interceptor is kept here (for non-Mpx frameworks or direct wx API calls)
 
-            // 保存原始方法（通过getter获取）
+            // Save original methods (obtained via getter)
             // @ts-ignore
             const _originalRequest = wx.request;
             // @ts-ignore
@@ -320,7 +320,7 @@ export const connectDevtoolsTool = defineTool({
             // @ts-ignore
             const _originalDownloadFile = wx.downloadFile;
 
-            // 拦截wx.request - 先删除getter
+            // Intercept wx.request - delete getter first
             // @ts-ignore
             delete wx.request;
             // @ts-ignore
@@ -357,7 +357,7 @@ export const connectDevtoolsTool = defineTool({
               }
             });
 
-            // 拦截wx.uploadFile - 先删除getter
+            // Intercept wx.uploadFile - delete getter first
             // @ts-ignore
             delete wx.uploadFile;
             // @ts-ignore
@@ -395,7 +395,7 @@ export const connectDevtoolsTool = defineTool({
               }
             });
 
-            // 拦截wx.downloadFile - 先删除getter
+            // Intercept wx.downloadFile - delete getter first
             // @ts-ignore
             delete wx.downloadFile;
             // @ts-ignore
@@ -439,41 +439,41 @@ export const connectDevtoolsTool = defineTool({
           context.networkStorage.startTime = new Date().toISOString();
         }
 
-        response.appendResponseLine(`网络监听已自动启动（增强型拦截）`);
+        response.appendResponseLine(`Network monitoring started automatically (enhanced interception)`);
       } catch (networkError) {
-        response.appendResponseLine(`警告: 网络监听启动失败 - ${networkError instanceof Error ? networkError.message : String(networkError)}`);
+        response.appendResponseLine(`Warning: Network monitoring failed to start - ${networkError instanceof Error ? networkError.message : String(networkError)}`);
       }
 
-      response.appendResponseLine(`成功连接到微信开发者工具 (传统模式)`);
-      response.appendResponseLine(`项目路径: ${projectPath}`);
-      response.appendResponseLine(`当前页面: ${result.pagePath}`);
+      response.appendResponseLine(`Successfully connected to WeChat DevTools (traditional mode)`);
+      response.appendResponseLine(`Project path: ${projectPath}`);
+      response.appendResponseLine(`Current page: ${result.pagePath}`);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`连接失败: ${errorMessage}`);
+      response.appendResponseLine(`Connection failed: ${errorMessage}`);
       throw error;
     }
   },
 });
 
 /**
- * 智能连接到微信开发者工具（增强版）
+ * Smart connection to WeChat DevTools (Enhanced Version)
  */
 export const connectDevtoolsEnhancedTool = defineTool({
   name: 'connect_devtools_enhanced',
-  description: '智能连接到微信开发者工具，支持多种模式和自动回退（推荐）',
+  description: 'Smart connection to WeChat DevTools, supports multiple modes and auto-fallback (recommended)',
   schema: z.object({
-    projectPath: z.string().describe('小程序项目的绝对路径'),
+    projectPath: z.string().describe('Absolute path to the mini program project'),
     mode: z.enum(['auto', 'launch', 'connect']).optional().default('auto')
-      .describe('连接模式: auto(智能), launch(传统), connect(两阶段)'),
-    cliPath: z.string().optional().describe('微信开发者工具CLI的绝对路径（可选）'),
-    autoPort: z.number().optional().describe('自动化监听端口（可选，默认自动检测）'),
-    autoAccount: z.string().optional().describe('指定用户openid（--auto-account）'),
-    timeout: z.number().optional().default(45000).describe('连接超时时间（毫秒）'),
-    fallbackMode: z.boolean().optional().default(true).describe('允许模式回退'),
-    healthCheck: z.boolean().optional().default(true).describe('执行健康检查'),
-    verbose: z.boolean().optional().default(false).describe('详细日志输出'),
-    autoAudits: z.boolean().optional().describe('启动时是否开启自动运行体验评分'),
+      .describe('Connection mode: auto(smart), launch(traditional), connect(two-phase)'),
+    cliPath: z.string().optional().describe('Absolute path to WeChat DevTools CLI (optional)'),
+    autoPort: z.number().optional().describe('Automation listening port (optional, auto-detects by default)'),
+    autoAccount: z.string().optional().describe('Specify user openid (--auto-account)'),
+    timeout: z.number().optional().default(45000).describe('Connection timeout (milliseconds)'),
+    fallbackMode: z.boolean().optional().default(true).describe('Allow mode fallback'),
+    healthCheck: z.boolean().optional().default(true).describe('Perform health check'),
+    verbose: z.boolean().optional().default(false).describe('Verbose logging output'),
+    autoAudits: z.boolean().optional().describe('Whether to enable automatic experience scoring on startup'),
   }),
   annotations: {
     audience: ['developers'],
@@ -492,28 +492,28 @@ export const connectDevtoolsEnhancedTool = defineTool({
       autoAudits
     } = request.params;
 
-    // 检查是否已有活跃连接
+    // Check if there's an active connection
     if (context.miniProgram) {
       try {
-        // 验证连接是否仍然有效
+        // Verify if connection is still valid
         const currentPage = await context.miniProgram.currentPage();
         const pagePath = await currentPage.path;
 
-        // 连接有效，复用现有连接
-        response.appendResponseLine(`✅ 检测到已有活跃连接，复用现有连接`);
-        response.appendResponseLine(`项目路径: ${projectPath}`);
-        response.appendResponseLine(`当前页面: ${pagePath}`);
-        response.appendResponseLine(`说明: 跳过重新连接，使用已建立的连接`);
+        // Connection is valid, reuse existing connection
+        response.appendResponseLine(`✅ Active connection detected, reusing existing connection`);
+        response.appendResponseLine(`Project path: ${projectPath}`);
+        response.appendResponseLine(`Current page: ${pagePath}`);
+        response.appendResponseLine(`Note: Skipping reconnection, using established connection`);
 
         if (verbose) {
-          response.appendResponseLine(`提示: 如需强制重新连接，请先关闭微信开发者工具`);
+          response.appendResponseLine(`Tip: To force reconnection, close WeChat DevTools first`);
         }
 
         return;
       } catch (error) {
-        // 连接已失效，清空并继续新建连接
+        // Connection is invalid, clear and continue with new connection
         if (verbose) {
-          response.appendResponseLine(`检测到已有连接但已失效，准备重新连接...`);
+          response.appendResponseLine(`Existing connection detected but invalid, preparing to reconnect...`);
         }
         context.miniProgram = null;
         context.currentPage = null;
@@ -536,18 +536,18 @@ export const connectDevtoolsEnhancedTool = defineTool({
 
       const result = await connectDevtoolsEnhanced(options);
 
-      // 更新上下文
+      // Update context
       context.miniProgram = result.miniProgram;
       context.currentPage = result.currentPage;
       context.elementMap.clear();
 
-      // 自动启动console监听
+      // Auto-start console monitoring
       try {
-        // 清除之前的监听器（如果有的话）
+        // Clear previous listeners (if any)
         context.miniProgram.removeAllListeners('console');
         context.miniProgram.removeAllListeners('exception');
 
-        // 启动console监听
+        // Start console monitoring
         context.consoleStorage.isMonitoring = true;
         context.consoleStorage.startTime = new Date().toISOString();
 
@@ -558,10 +558,10 @@ export const connectDevtoolsEnhancedTool = defineTool({
             timestamp: new Date().toISOString(),
             source: 'miniprogram'
           };
-          // 使用新的 navigations 结构
+          // Use new navigations structure
           const currentSession = context.consoleStorage.navigations[0];
           if (currentSession) {
-            // 分配 msgid（如果有 idGenerator）
+            // Assign msgid (if idGenerator available)
             if (context.consoleStorage.idGenerator) {
               consoleMessage.msgid = context.consoleStorage.idGenerator();
               context.consoleStorage.messageIdMap.set(consoleMessage.msgid, consoleMessage);
@@ -578,10 +578,10 @@ export const connectDevtoolsEnhancedTool = defineTool({
             timestamp: new Date().toISOString(),
             source: 'miniprogram'
           };
-          // 使用新的 navigations 结构
+          // Use new navigations structure
           const currentSession = context.consoleStorage.navigations[0];
           if (currentSession) {
-            // 分配 msgid（如果有 idGenerator）
+            // Assign msgid (if idGenerator available)
             if (context.consoleStorage.idGenerator) {
               exceptionMessage.msgid = context.consoleStorage.idGenerator();
               context.consoleStorage.messageIdMap.set(exceptionMessage.msgid, exceptionMessage);
@@ -591,32 +591,32 @@ export const connectDevtoolsEnhancedTool = defineTool({
           console.log(`[Exception]:`, err.message, err.stack);
         });
 
-        response.appendResponseLine(`Console监听已自动启动`);
+        response.appendResponseLine(`Console monitoring started automatically`);
       } catch (consoleError) {
-        response.appendResponseLine(`警告: Console监听启动失败 - ${consoleError instanceof Error ? consoleError.message : String(consoleError)}`);
+        response.appendResponseLine(`Warning: Console monitoring failed to start - ${consoleError instanceof Error ? consoleError.message : String(consoleError)}`);
       }
 
-      // 自动启动网络监听（使用evaluate()方式绕过框架限制）
+      // Auto-start network monitoring (using evaluate() to bypass framework restrictions)
       try {
         if (!context.networkStorage.isMonitoring) {
-          // 使用evaluate()注入拦截器（与第一个工具相同的逻辑）
+          // Use evaluate() to inject interceptors (same logic as first tool)
           await context.miniProgram.evaluate(function() {
             // @ts-ignore
             if (typeof wx === 'undefined' || wx.__networkInterceptorsInstalled) return;
             // @ts-ignore
             wx.__networkLogs = wx.__networkLogs || [];
 
-            // Mpx 拦截器已在 tools.ts 的 connectDevtools() 中统一注入
-            // 此处仅保留 wx.request 回退拦截器（用于非 Mpx 框架或直接调用 wx API 的场景）
+            // Mpx interceptors are injected uniformly in connectDevtools() in tools.ts
+            // Only fallback wx.request interceptor is kept here (for non-Mpx frameworks or direct wx API calls)
 
-            // @ts-ignore - 保存原始方法（通过getter获取）
+            // @ts-ignore - Save original methods (obtained via getter)
             const _originalRequest = wx.request;
             // @ts-ignore
             const _originalUploadFile = wx.uploadFile;
             // @ts-ignore
             const _originalDownloadFile = wx.downloadFile;
 
-            // @ts-ignore - 先删除getter
+            // @ts-ignore - Delete getter first
             delete wx.request;
             // @ts-ignore
             Object.defineProperty(wx, 'request', {
@@ -644,7 +644,7 @@ export const connectDevtoolsEnhancedTool = defineTool({
               }
             });
 
-            // @ts-ignore - 先删除getter
+            // @ts-ignore - Delete getter first
             delete wx.uploadFile;
             // @ts-ignore
             Object.defineProperty(wx, 'uploadFile', {
@@ -674,7 +674,7 @@ export const connectDevtoolsEnhancedTool = defineTool({
               }
             });
 
-            // @ts-ignore - 先删除getter
+            // @ts-ignore - Delete getter first
             delete wx.downloadFile;
             // @ts-ignore
             Object.defineProperty(wx, 'downloadFile', {
@@ -710,36 +710,36 @@ export const connectDevtoolsEnhancedTool = defineTool({
           context.networkStorage.startTime = new Date().toISOString();
         }
 
-        response.appendResponseLine(`网络监听已自动启动（增强型拦截）`);
+        response.appendResponseLine(`Network monitoring started automatically (enhanced interception)`);
       } catch (networkError) {
-        response.appendResponseLine(`警告: 网络监听启动失败 - ${networkError instanceof Error ? networkError.message : String(networkError)}`);
+        response.appendResponseLine(`Warning: Network monitoring failed to start - ${networkError instanceof Error ? networkError.message : String(networkError)}`);
       }
 
-      // 根据结果显示详细信息
-      response.appendResponseLine(`✅ 智能连接成功`);
-      response.appendResponseLine(`项目路径: ${projectPath}`);
-      response.appendResponseLine(`当前页面: ${result.pagePath}`);
-      response.appendResponseLine(`连接模式: ${result.connectionMode}`);
-      response.appendResponseLine(`启动耗时: ${result.startupTime}ms`);
-      response.appendResponseLine(`健康状态: ${result.healthStatus}`);
+      // Display detailed information based on result
+      response.appendResponseLine(`✅ Smart connection successful`);
+      response.appendResponseLine(`Project path: ${projectPath}`);
+      response.appendResponseLine(`Current page: ${result.pagePath}`);
+      response.appendResponseLine(`Connection mode: ${result.connectionMode}`);
+      response.appendResponseLine(`Startup time: ${result.startupTime}ms`);
+      response.appendResponseLine(`Health status: ${result.healthStatus}`);
 
       if (result.processInfo) {
-        response.appendResponseLine(`进程信息: PID=${result.processInfo.pid}, Port=${result.processInfo.port}`);
+        response.appendResponseLine(`Process info: PID=${result.processInfo.pid}, Port=${result.processInfo.port}`);
       }
 
     } catch (error) {
-      // 处理增强错误信息
+      // Handle enhanced error information
       if (error instanceof DevToolsConnectionError) {
-        response.appendResponseLine(`❗ ${error.phase}阶段失败: ${error.message}`);
+        response.appendResponseLine(`❗ ${error.phase} phase failed: ${error.message}`);
         if (error.originalError) {
-          response.appendResponseLine(`原始错误: ${error.originalError.message}`);
+          response.appendResponseLine(`Original error: ${error.originalError.message}`);
         }
         if (error.details && verbose) {
-          response.appendResponseLine(`详细信息: ${JSON.stringify(error.details, null, 2)}`);
+          response.appendResponseLine(`Details: ${JSON.stringify(error.details, null, 2)}`);
         }
       } else {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        response.appendResponseLine(`连接失败: ${errorMessage}`);
+        response.appendResponseLine(`Connection failed: ${errorMessage}`);
       }
       throw error;
     }
@@ -747,29 +747,29 @@ export const connectDevtoolsEnhancedTool = defineTool({
 });
 
 /**
- * 获取当前页面信息
+ * Get current page information
  */
 export const getCurrentPageTool = defineTool({
   name: 'get_current_page',
-  description: '获取当前页面信息并设置为活动页面',
+  description: 'Get current page information and set as active page',
   schema: z.object({}),
   annotations: {
     audience: ['developers'],
   },
   handler: async (request, response, context) => {
     if (!context.miniProgram) {
-      throw new Error('请先连接到微信开发者工具');
+      throw new Error('Please connect to WeChat DevTools first');
     }
 
     try {
       context.currentPage = await context.miniProgram.currentPage();
       const pagePath = await context.currentPage.path;
 
-      response.appendResponseLine(`当前页面: ${pagePath}`);
+      response.appendResponseLine(`Current page: ${pagePath}`);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`获取当前页面失败: ${errorMessage}`);
+      response.appendResponseLine(`Failed to get current page: ${errorMessage}`);
       throw error;
     }
   },

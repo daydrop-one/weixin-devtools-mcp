@@ -1,11 +1,11 @@
 /**
- * MCP 真实环境集成测试
+ * MCP Real Environment Integration Tests
  *
- * 测试目标：验证完整的自动化流程在真实环境中的表现
- * 依赖：微信开发者工具 + playground/wx/ 测试项目
- * 运行：RUN_INTEGRATION_TESTS=true npm run test:mcp-integration
+ * Test Objectives: Verify complete automation workflow performance in real environment
+ * Dependencies: WeChat DevTools + playground/wx/ test project
+ * Run: RUN_INTEGRATION_TESTS=true npm run test:mcp-integration
  *
- * 参考：chrome-devtools-mcp 的 withBrowser 模式
+ * Reference: chrome-devtools-mcp's withBrowser mode
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -21,10 +21,10 @@ import { screenshotTool } from '../../src/tools/screenshot.js';
 import { getConsoleTool, startConsoleMonitoringTool } from '../../src/tools/console.js';
 import { getNetworkRequestsTool } from '../../src/tools/network.js';
 
-// 环境变量控制
+// Environment variable control
 const RUN_INTEGRATION_TESTS = process.env.RUN_INTEGRATION_TESTS === 'true';
 
-// 测试项目路径
+// Test project path
 const TEST_PROJECT_PATH = path.resolve(process.cwd(), 'playground/wx');
 
 /**

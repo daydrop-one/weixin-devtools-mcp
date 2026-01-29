@@ -1,12 +1,12 @@
 /**
- * $ 工具和 waitFor 工具的单元测试
+ * Unit tests for $ tool and waitFor tool
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { queryElements, waitForCondition } from '../../src/tools.js';
 
-describe('页面查询工具测试', () => {
-  describe('queryElements 函数测试', () => {
+describe('Page Query Tools Tests', () => {
+  describe('queryElements Function Tests', () => {
     let mockPage: any;
     let mockElementMap: Map<string, string>;
     let mockElement: any;
@@ -14,7 +14,7 @@ describe('页面查询工具测试', () => {
     beforeEach(() => {
       mockElement = {
         tagName: 'view',
-        text: vi.fn().mockResolvedValue('测试文本'),
+        text: vi.fn().mockResolvedValue('test text'),
         size: vi.fn().mockResolvedValue({ width: 100, height: 50 }),
         offset: vi.fn().mockResolvedValue({ left: 10, top: 20 }),
         attribute: vi.fn().mockImplementation((attr: string) => {
@@ -31,43 +31,43 @@ describe('页面查询工具测试', () => {
       mockElementMap = new Map<string, string>();
     });
 
-    it('应该验证选择器不能为空字符串', async () => {
+    it('should validate selector cannot be empty string', async () => {
       await expect(queryElements(mockPage, mockElementMap, { selector: '' }))
-        .rejects.toThrow('选择器不能为空');
+        .rejects.toThrow('Selector cannot be empty');
     });
 
-    it('应该验证选择器不能为空格字符串', async () => {
+    it('should validate selector cannot be whitespace string', async () => {
       await expect(queryElements(mockPage, mockElementMap, { selector: '   ' }))
-        .rejects.toThrow('选择器不能为空');
+        .rejects.toThrow('Selector cannot be empty');
     });
 
-    it('应该验证选择器不能为null', async () => {
+    it('should validate selector cannot be null', async () => {
       await expect(queryElements(mockPage, mockElementMap, { selector: null as any }))
-        .rejects.toThrow('选择器不能为空');
+        .rejects.toThrow('Selector cannot be empty');
     });
 
-    it('应该验证选择器不能为undefined', async () => {
+    it('should validate selector cannot be undefined', async () => {
       await expect(queryElements(mockPage, mockElementMap, { selector: undefined as any }))
-        .rejects.toThrow('选择器不能为空');
+        .rejects.toThrow('Selector cannot be empty');
     });
 
-    it('应该验证选择器必须是字符串类型', async () => {
+    it('should validate selector must be string type', async () => {
       await expect(queryElements(mockPage, mockElementMap, { selector: 123 as any }))
-        .rejects.toThrow('选择器不能为空');
+        .rejects.toThrow('Selector cannot be empty');
     });
 
-    it('应该验证页面对象是必需的', async () => {
+    it('should validate page object is required', async () => {
       await expect(queryElements(null, mockElementMap, { selector: 'view' }))
-        .rejects.toThrow('页面对象是必需的');
+        .rejects.toThrow('Page object is required');
     });
 
-    it('应该成功查询有效的选择器', async () => {
+    it('should successfully query valid selector', async () => {
       const results = await queryElements(mockPage, mockElementMap, { selector: 'view.test' });
 
       expect(results).toHaveLength(1);
       expect(results[0]).toEqual(expect.objectContaining({
         tagName: 'view',
-        text: '测试文本',
+        text: 'test text',
         position: expect.objectContaining({
           left: 10,
           top: 20,
@@ -83,7 +83,7 @@ describe('页面查询工具测试', () => {
       expect(mockPage.$$).toHaveBeenCalledWith('view.test');
     });
 
-    it('应该处理没有找到元素的情况', async () => {
+    it('should handle when no elements are found', async () => {
       mockPage.$$ = vi.fn().mockResolvedValue([]);
 
       const results = await queryElements(mockPage, mockElementMap, { selector: 'view.nonexistent' });
@@ -91,24 +91,24 @@ describe('页面查询工具测试', () => {
       expect(results).toHaveLength(0);
     });
 
-    it('应该正确处理元素查询错误', async () => {
-      mockPage.$$ = vi.fn().mockRejectedValue(new Error('查询失败'));
+    it('should correctly handle element query errors', async () => {
+      mockPage.$$ = vi.fn().mockRejectedValue(new Error('Query failed'));
 
       await expect(queryElements(mockPage, mockElementMap, { selector: 'view' }))
-        .rejects.toThrow('查询元素失败: 查询失败');
+        .rejects.toThrow('Failed to query elements: Query failed');
     });
 
-    it('应该为查询到的元素生成UID并更新映射', async () => {
+    it('should generate UID for queried elements and update mapping', async () => {
       const results = await queryElements(mockPage, mockElementMap, { selector: 'view.test' });
 
       expect(results).toHaveLength(1);
       expect(results[0].uid).toBeDefined();
-      // UID 生成优先使用 ID 属性，mock 元素有 id='test-id'
+      // UID generation prioritizes ID attribute, mock element has id='test-id'
       expect(results[0].uid).toBe('view#test-id');
       expect(mockElementMap.has(results[0].uid)).toBe(true);
     });
 
-    it('应该处理多个元素查询结果', async () => {
+    it('should handle multiple element query results', async () => {
       const mockElement2 = {
         ...mockElement,
         attribute: vi.fn().mockImplementation((attr: string) => {
@@ -124,13 +124,13 @@ describe('页面查询工具测试', () => {
       expect(results).toHaveLength(2);
       expect(mockElementMap.size).toBe(2);
 
-      // 验证每个元素都有唯一的UID（优先使用ID属性）
+      // Verify each element has unique UID (prioritize ID attribute)
       expect(results[0].uid).toBe('view#test-id');
       expect(results[1].uid).toBe('view#test-id-2');
     });
 
-    it('应该忽略元素属性获取错误', async () => {
-      mockElement.attribute = vi.fn().mockRejectedValue(new Error('属性获取失败'));
+    it('should ignore element attribute retrieval errors', async () => {
+      mockElement.attribute = vi.fn().mockRejectedValue(new Error('Attribute retrieval failed'));
 
       const results = await queryElements(mockPage, mockElementMap, { selector: 'view' });
 
@@ -138,9 +138,9 @@ describe('页面查询工具测试', () => {
       expect(results[0].attributes).toBeUndefined();
     });
 
-    it('应该忽略元素位置获取错误', async () => {
-      mockElement.size = vi.fn().mockRejectedValue(new Error('大小获取失败'));
-      mockElement.offset = vi.fn().mockRejectedValue(new Error('位置获取失败'));
+    it('should ignore element position retrieval errors', async () => {
+      mockElement.size = vi.fn().mockRejectedValue(new Error('Size retrieval failed'));
+      mockElement.offset = vi.fn().mockRejectedValue(new Error('Position retrieval failed'));
 
       const results = await queryElements(mockPage, mockElementMap, { selector: 'view' });
 
@@ -148,8 +148,8 @@ describe('页面查询工具测试', () => {
       expect(results[0].position).toBeUndefined();
     });
 
-    it('应该忽略元素文本获取错误', async () => {
-      mockElement.text = vi.fn().mockRejectedValue(new Error('文本获取失败'));
+    it('should ignore element text retrieval errors', async () => {
+      mockElement.text = vi.fn().mockRejectedValue(new Error('Text retrieval failed'));
 
       const results = await queryElements(mockPage, mockElementMap, { selector: 'view' });
 
@@ -158,7 +158,7 @@ describe('页面查询工具测试', () => {
     });
   });
 
-  describe('waitForCondition 函数测试', () => {
+  describe('waitForCondition Function Tests', () => {
     let mockPage: any;
 
     beforeEach(() => {
@@ -169,14 +169,14 @@ describe('页面查询工具测试', () => {
       };
     });
 
-    it('应该支持简单的时间等待', async () => {
+    it('should support simple time delay wait', async () => {
       const result = await waitForCondition(mockPage, 1000);
 
       expect(result).toBe(true);
       expect(mockPage.waitFor).toHaveBeenCalledWith(1000);
     });
 
-    it('应该支持选择器字符串等待', async () => {
+    it('should support selector string wait', async () => {
       const mockElement = { text: vi.fn().mockResolvedValue('') };
       mockPage.$ = vi.fn().mockResolvedValue(mockElement);
 
@@ -185,32 +185,32 @@ describe('页面查询工具测试', () => {
       expect(result).toBe(true);
     });
 
-    it('应该支持复杂的等待条件对象', async () => {
+    it('should support complex wait condition object', async () => {
       const mockElement = {
-        text: vi.fn().mockResolvedValue('测试文本'),
+        text: vi.fn().mockResolvedValue('test text'),
         size: vi.fn().mockResolvedValue({ width: 100, height: 50 })
       };
       mockPage.$ = vi.fn().mockResolvedValue(mockElement);
 
       const result = await waitForCondition(mockPage, {
         selector: 'view.test',
-        text: '测试文本',
+        text: 'test text',
         timeout: 3000
       });
 
       expect(result).toBe(true);
     });
 
-    it('应该在超时时抛出错误', async () => {
+    it('should throw error on timeout', async () => {
       mockPage.$ = vi.fn().mockResolvedValue(null);
 
       await expect(waitForCondition(mockPage, {
         selector: 'view.nonexistent',
-        timeout: 100  // 短超时时间
-      })).rejects.toThrow('等待条件失败');
+        timeout: 100  // short timeout
+      })).rejects.toThrow('Wait condition failed');
     });
 
-    it('应该支持可见性检查', async () => {
+    it('should support visibility check', async () => {
       const mockElement = {
         size: vi.fn().mockResolvedValue({ width: 100, height: 50 })
       };
@@ -225,7 +225,7 @@ describe('页面查询工具测试', () => {
       expect(result).toBe(true);
     });
 
-    it('应该支持元素消失等待', async () => {
+    it('should support element disappear wait', async () => {
       mockPage.$ = vi.fn().mockResolvedValue(null);
 
       const result = await waitForCondition(mockPage, {

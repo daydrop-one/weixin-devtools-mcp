@@ -1,10 +1,10 @@
 /**
- * MCP Resources 测试
+ * MCP Resources Tests
  *
- * 测试目标：验证 MCP 服务器的资源提供功能
- * 资源类型：
- * - weixin://connection/status - 连接状态
- * - weixin://page/snapshot - 页面快照
+ * Test Objectives: Verify MCP server resource provision functionality
+ * Resource Types:
+ * - weixin://connection/status - Connection status
+ * - weixin://page/snapshot - Page snapshot
  */
 
 import { describe, it, expect } from 'vitest';
@@ -16,7 +16,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
- * 辅助函数：创建 MCP 客户端并执行回调
+ * Helper function: Create MCP client and execute callback
  */
 async function withClient(cb: (client: Client) => Promise<void>) {
   const serverPath = path.join(__dirname, '../../build/server.js');
@@ -46,7 +46,7 @@ async function withClient(cb: (client: Client) => Promise<void>) {
 
 describe('MCP Resources Tests', () => {
   describe('Resource Listing', () => {
-    it('应该提供连接状态资源', async () => {
+    it('should provide connection status resource', async () => {
       await withClient(async (client) => {
         const { resources } = await client.listResources();
 
@@ -55,14 +55,14 @@ describe('MCP Resources Tests', () => {
       });
     });
 
-    it('应该提供资源列表', async () => {
+    it('should provide resource list', async () => {
       await withClient(async (client) => {
         const { resources } = await client.listResources();
 
         expect(resources).toBeDefined();
         expect(resources.length).toBeGreaterThan(0);
 
-        // 验证资源结构
+        // Verify resource structure
         resources.forEach(resource => {
           expect(resource.uri).toBeDefined();
           expect(resource.name).toBeDefined();
@@ -73,7 +73,7 @@ describe('MCP Resources Tests', () => {
   });
 
   describe('Resource Reading', () => {
-    it('应该能读取连接状态资源', async () => {
+    it('should be able to read connection status resource', async () => {
       await withClient(async (client) => {
         const result = await client.readResource({
           uri: 'weixin://connection/status'
@@ -83,20 +83,20 @@ describe('MCP Resources Tests', () => {
         expect(result.contents.length).toBeGreaterThan(0);
         expect(result.contents[0].mimeType).toBe('application/json');
 
-        // 验证状态内容
+        // Verify status content
         const status = JSON.parse(result.contents[0].text);
         expect(status).toHaveProperty('connected');
         expect(status).toHaveProperty('hasCurrentPage');
       });
     });
 
-    it('读取不存在的资源应该返回错误', async () => {
+    it('reading non-existent resource should return error', async () => {
       await withClient(async (client) => {
         try {
           await client.readResource({
             uri: 'weixin://nonexistent/resource'
           });
-          expect.fail('应该抛出错误');
+          expect.fail('Should throw error');
         } catch (error) {
           expect(error).toBeDefined();
         }
@@ -105,7 +105,7 @@ describe('MCP Resources Tests', () => {
   });
 
   describe('Resource Content Validation', () => {
-    it('连接状态资源应该包含正确的字段', async () => {
+    it('connection status resource should contain correct fields', async () => {
       await withClient(async (client) => {
         const result = await client.readResource({
           uri: 'weixin://connection/status'
@@ -113,11 +113,11 @@ describe('MCP Resources Tests', () => {
 
         const status = JSON.parse(result.contents[0].text);
 
-        // 验证必需字段
+        // Verify required fields
         expect(typeof status.connected).toBe('boolean');
         expect(typeof status.hasCurrentPage).toBe('boolean');
 
-        // 未连接时的状态验证
+        // Verify status when not connected
         expect(status.connected).toBe(false);
         expect(status.hasCurrentPage).toBe(false);
       });

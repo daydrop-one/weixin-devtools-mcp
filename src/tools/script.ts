@@ -1,6 +1,6 @@
 /**
- * 脚本执行工具
- * 在小程序 AppService 上下文中执行 JavaScript 代码
+ * Script Execution Tool
+ * Execute JavaScript code in Mini Program AppService context
  */
 
 import { z } from 'zod';
@@ -8,26 +8,26 @@ import { defineTool } from './ToolDefinition.js';
 
 export const evaluateScript = defineTool({
   name: 'evaluate_script',
-  description: `在小程序 AppService 上下文中执行 JavaScript 代码并返回结果。
-支持访问 wx API、getApp()、getCurrentPages() 等小程序全局对象。
-返回值必须是 JSON 可序列化的类型。`,
+  description: `Execute JavaScript code in Mini Program AppService context and return result.
+Supports accessing wx API, getApp(), getCurrentPages() and other mini program global objects.
+Return value must be JSON serializable type.`,
 
   schema: z.object({
     function: z.string().describe(
-      `JavaScript 函数声明，将在小程序 AppService 上下文中执行。
-支持同步和异步函数，可访问 wx API 和 getApp()。
+      `JavaScript function declaration to execute in Mini Program AppService context.
+Supports both synchronous and asynchronous functions, can access wx API and getApp().
 
-注意：函数会被序列化传递，无法使用闭包引用外部变量。
+Note: Function will be serialized for transmission, cannot use closures to reference external variables.
 
-无参数示例：
+No parameters example:
 \`() => {
   return wx.getSystemInfoSync();
 }\`
 
-或使用字符串形式：
+Or using string form:
 \`"() => wx.getSystemInfoSync()"\`
 
-异步示例：
+Async example:
 \`async () => {
   return new Promise(resolve => {
     wx.getSystemInfo({
@@ -36,19 +36,19 @@ export const evaluateScript = defineTool({
   });
 }\`
 
-带参数示例：
+With parameters example:
 \`(key, value) => {
   wx.setStorageSync(key, value);
   return { success: true };
 }\`
 
-访问全局数据示例：
+Accessing global data example:
 \`() => {
   const app = getApp();
   return app.globalData;
 }\`
 
-访问当前页面示例：
+Accessing current page example:
 \`() => {
   const pages = getCurrentPages();
   const currentPage = pages[pages.length - 1];
@@ -56,44 +56,44 @@ export const evaluateScript = defineTool({
 }\``
     ),
     args: z.array(z.any()).optional().describe(
-      `可选的参数数组，传递给函数执行。
-参数必须是 JSON 可序列化的类型（字符串、数字、布尔值、对象、数组等）。
+      `Optional array of arguments to pass to the function.
+Arguments must be JSON serializable types (strings, numbers, booleans, objects, arrays, etc.).
 
-示例：
-- 单个参数: ["testKey"]
-- 多个参数: ["key", 123, { foo: "bar" }]
-- 复杂对象: [{ name: "test", data: [1, 2, 3] }]`
+Examples:
+- Single argument: ["testKey"]
+- Multiple arguments: ["key", 123, { foo: "bar" }]
+- Complex object: [{ name: "test", data: [1, 2, 3] }]`
     )
   }),
 
   handler: async (request, response, context) => {
-    // 检查连接状态
+    // Check connection status
     if (!context.miniProgram) {
-      throw new Error('未连接到微信开发者工具。请先使用 connect_devtools_enhanced 建立连接。');
+      throw new Error('Not connected to WeChat DevTools. Please use connect_devtools_enhanced to establish connection first.');
     }
 
     const { function: functionCode, args = [] } = request.params;
 
     try {
-      // 执行脚本
-      // miniProgram.evaluate 会自动处理函数序列化和参数传递
+      // Execute script
+      // miniProgram.evaluate will automatically handle function serialization and argument passing
       const result = await context.miniProgram.evaluate(functionCode, ...args);
 
-      // 序列化结果
+      // Serialize result
       const serialized = JSON.stringify(result, null, 2);
 
-      // 返回响应
-      response.appendResponseLine('脚本在小程序 AppService 上下文中执行成功');
+      // Return response
+      response.appendResponseLine('Script executed successfully in Mini Program AppService context');
       response.appendResponseLine('');
-      response.appendResponseLine('返回结果：');
+      response.appendResponseLine('Return result:');
       response.appendResponseLine('```json');
       response.appendResponseLine(serialized);
       response.appendResponseLine('```');
 
     } catch (error: any) {
-      // 错误处理
+      // Error handling
       const errorMessage = error.message || String(error);
-      throw new Error(`脚本执行失败: ${errorMessage}`);
+      throw new Error(`Script execution failed: ${errorMessage}`);
     }
   }
 });

@@ -1,11 +1,11 @@
 /**
- * input.ts 新功能测试
- * 测试输入交互工具的新增功能
+ * input.ts New Feature Tests
+ * Test new functionality added to input interaction tools
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-// Mock tools.js 中的输入函数
+// Mock input functions in tools.js
 vi.mock('../../src/tools.js', () => ({
   clickElement: vi.fn(),
   inputText: vi.fn(),
@@ -13,7 +13,7 @@ vi.mock('../../src/tools.js', () => ({
   setFormControl: vi.fn()
 }))
 
-// 导入被测试的工具（包括新增功能）
+// Import tools being tested (including new features)
 import {
   clickTool,
   inputTextTool,
@@ -24,7 +24,7 @@ import {
   setSliderTool
 } from '../../src/tools/input.js'
 
-// 导入mock的函数用于验证
+// Import mock functions for verification
 import {
   clickElement,
   inputText,
@@ -32,8 +32,8 @@ import {
   setFormControl
 } from '../../src/tools.js'
 
-describe('input.ts 新功能测试', () => {
-  // 创建 mock 元素对象
+describe('input.ts New Feature Tests', () => {
+  // Create mock element object
   const createMockElement = () => ({
     tap: vi.fn().mockResolvedValue(undefined),
     input: vi.fn().mockResolvedValue(undefined),
@@ -41,12 +41,12 @@ describe('input.ts 新功能测试', () => {
     trigger: vi.fn().mockResolvedValue(undefined),
   });
 
-  // 创建测试用的上下文对象
+  // Create mock context object for testing
   const mockContext = {
     currentPage: {
       path: '/pages/test/test',
       $$: async (selector: string) => {
-        // 根据选择器返回 mock 元素数组
+        // Return mock element array based on selector
         return [createMockElement()];
       }
     },
@@ -70,18 +70,18 @@ describe('input.ts 新功能测试', () => {
       startTime: null,
       originalMethods: {}
     },
-    // 实现 getElementByUid 方法
+    // Implement getElementByUid method
     getElementByUid: async (uid: string) => {
       const mapInfo = mockContext.elementMap.get(uid);
       if (!mapInfo) {
-        throw new Error(`找不到 UID: ${uid}`);
+        throw new Error(`UID not found: ${uid}`);
       }
       const elements = await mockContext.currentPage.$$(mapInfo.selector);
       return elements[mapInfo.index];
     }
   } as any
 
-  // 创建测试用的请求和响应对象
+  // Create mock request and response objects for testing
   const createMockRequest = (params: any) => ({ params })
   const createMockResponse = () => {
     const lines: string[] = []

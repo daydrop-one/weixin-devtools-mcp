@@ -1,6 +1,6 @@
 /**
- * Script功能集成测试
- * 测试 evaluate_script 工具在真实环境中的执行
+ * Script Feature Integration Tests
+ * Test evaluate_script tool execution in real environment
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -13,10 +13,10 @@ import {
   withTimeout
 } from '../utils/test-utils.js';
 
-// 只在环境变量RUN_INTEGRATION_TESTS为true时运行
+// Only run when environment variable RUN_INTEGRATION_TESTS is true
 const shouldRun = process.env.RUN_INTEGRATION_TESTS === 'true';
 
-// 测试配置
+// Test configuration
 const TEST_PROJECT_PATH = '/Users/didi/workspace/wooPro/weixin-devtools-mcp/playground/wx';
 const TEST_CLI_PATH = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli';
 
@@ -27,7 +27,7 @@ describe.skipIf(!shouldRun)('Script Integration Tests', () => {
   let environmentReady = false;
 
   beforeAll(async () => {
-    console.log('🔧 检查Script集成测试环境...');
+    console.log('🔧 Checking Script integration test environment...');
 
     // 检查环境是否满足测试要求
     const envCheck = await checkIntegrationTestEnvironment(TEST_PROJECT_PATH, TEST_CLI_PATH);

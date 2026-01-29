@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 /**
- * 微信开发者工具自动化 MCP 服务器
- * 提供微信小程序自动化测试功能，包括：
- * - 连接微信开发者工具
- * - 获取页面快照和元素信息
- * - 点击页面元素
- * - 其他自动化操作
+ * WeChat DevTools Automation MCP Server
+ * Provides WeChat Mini Program automation testing features, including:
+ * - Connect to WeChat DevTools
+ * - Get page snapshots and element information
+ * - Click page elements
+ * - Other automation operations
  */
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -18,11 +18,11 @@ import {
   ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 
-// 导入微信小程序自动化 SDK
+// Import WeChat Mini Program automation SDK
 import automator from "miniprogram-automator";
 import path from "path";
 
-// 导入模块化工具系统
+// Import modular tool system
 import {
   allTools,
   ToolDefinition,
@@ -33,21 +33,21 @@ import {
   NetworkStorage
 } from './tools/index.js';
 
-// 导入 ElementMapInfo 类型
+// Import ElementMapInfo type
 import type { ElementMapInfo } from './tools.js';
 
-// 导入zod-to-json-schema用于schema转换
+// Import zod-to-json-schema for schema conversion
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 /**
- * 元素快照接口
+ * Element snapshot interface
  */
 interface ElementSnapshot {
-  uid: string;           // 元素唯一标识符（使用选择器路径）
-  tagName: string;       // 标签名
-  text?: string;         // 元素文本
-  attributes?: Record<string, string>;   // 元素属性
-  position?: {           // 元素位置信息
+  uid: string;           // Element unique identifier (using selector path)
+  tagName: string;       // Tag name
+  text?: string;         // Element text
+  attributes?: Record<string, string>;   // Element attributes
+  position?: {           // Element position info
     left: number;
     top: number;
     width: number;
@@ -56,42 +56,42 @@ interface ElementSnapshot {
 }
 
 /**
- * 页面快照接口
+ * Page snapshot interface
  */
 interface PageSnapshot {
-  path: string;          // 页面路径
-  elements: ElementSnapshot[];  // 所有元素
+  path: string;          // Page path
+  elements: ElementSnapshot[];  // All elements
 }
 
 /**
- * 全局状态管理
+ * Global state management
  */
 const state = {
-  /** MiniProgram 实例 (来自 miniprogram-automator) */
+  /** MiniProgram instance (from miniprogram-automator) */
   miniProgram: null as any,
-  /** 当前页面实例 (来自 miniprogram-automator 的 Page 类型) */
+  /** Current page instance (from miniprogram-automator's Page type) */
   currentPage: null as any,
-  elementMap: new Map<string, ElementMapInfo>(), // uid -> ElementMapInfo 映射
+  elementMap: new Map<string, ElementMapInfo>(), // uid -> ElementMapInfo mapping
   consoleStorage: {
     navigations: [{ messages: [], exceptions: [], timestamp: new Date().toISOString() }],
     messageIdMap: new Map(),
     isMonitoring: false,
     startTime: null,
     maxNavigations: 3
-  } as ConsoleStorage, // Console存储
+  } as ConsoleStorage, // Console storage
   networkStorage: {
     requests: [],
     isMonitoring: false,
     startTime: null,
     originalMethods: {}
-  } as NetworkStorage, // 网络存储
+  } as NetworkStorage, // Network storage
 };
 
 /**
- * 模块化工具适配器基础设施
+ * Modular tool adapter infrastructure
  */
 
-// MockResponse 适配器类 - 适配模块化工具的响应接口
+// MockResponse adapter class - Adapts modular tool response interface
 class MockResponse implements ToolResponse {
   private lines: string[] = [];
   private includeSnapshot = false;
@@ -119,18 +119,18 @@ class MockResponse implements ToolResponse {
 }
 
 /**
- * 通过 UID 获取元素的实现（index.ts 版本）
+ * Get element by UID implementation (index.ts version)
  */
 async function getElementByUidForIndex(uid: string): Promise<any> {
   if (!state.currentPage) {
-    throw new Error('请先连接微信开发者工具并获取当前页面');
+    throw new Error('Please connect to WeChat DevTools and get the current page first');
   }
 
   const mapInfo = state.elementMap.get(uid);
   if (!mapInfo) {
     throw new Error(
-      `找不到 UID: ${uid}\n` +
-      `请先调用 get_page_snapshot 工具获取页面快照`
+      `UID not found: ${uid}\n` +
+      `Please call get_page_snapshot tool to get page snapshot first`
     );
   }
 
@@ -139,27 +139,27 @@ async function getElementByUidForIndex(uid: string): Promise<any> {
   const elements = await state.currentPage.$$(mapInfo.selector);
   if (!elements || elements.length === 0) {
     throw new Error(
-      `选择器 "${mapInfo.selector}" 未找到任何元素\n` +
-      `页面可能已发生变化，请重新获取快照`
+      `Selector "${mapInfo.selector}" found no elements\n` +
+      `The page may have changed, please get the snapshot again`
     );
   }
 
   if (mapInfo.index >= elements.length) {
     throw new Error(
-      `元素索引 ${mapInfo.index} 超出范围（选择器 "${mapInfo.selector}" 共找到 ${elements.length} 个元素）\n` +
-      `页面可能已发生变化，请重新获取快照`
+      `Element index ${mapInfo.index} is out of range (selector "${mapInfo.selector}" found ${elements.length} elements)\n` +
+      `The page may have changed, please get the snapshot again`
     );
   }
 
   const element = elements[mapInfo.index];
   if (!element) {
-    throw new Error(`无法获取索引 ${mapInfo.index} 的元素`);
+    throw new Error(`Unable to get element at index ${mapInfo.index}`);
   }
 
   return element;
 }
 
-// 状态转换函数 - 将全局状态转换为ToolContext
+// State conversion function - Converts global state to ToolContext
 function createToolContext(): ToolContext {
   return {
     miniProgram: state.miniProgram,
@@ -171,13 +171,13 @@ function createToolContext(): ToolContext {
   };
 }
 
-// 创建工具处理器映射
+// Create tool handler mapping
 const toolHandlers = new Map<string, ToolDefinition>();
 allTools.forEach(tool => {
   toolHandlers.set(tool.name, tool);
 });
 
-// 工具定义转换函数 - 将模块化工具转换为传统MCP格式
+// Tool definition conversion function - Converts modular tools to traditional MCP format
 function convertToolDefinition(tool: ToolDefinition) {
   return {
     name: tool.name,
@@ -190,7 +190,7 @@ function convertToolDefinition(tool: ToolDefinition) {
 }
 
 /**
- * 创建 MCP 服务器，提供微信开发者工具自动化功能
+ * Create MCP server, providing WeChat DevTools automation features
  */
 const server = new Server(
   {
@@ -206,8 +206,8 @@ const server = new Server(
 );
 
 /**
- * 生成元素的唯一标识符 (uid)
- * 使用CSS选择器路径作为uid
+ * Generate element unique identifier (uid)
+ * Uses CSS selector path as uid
  */
 async function generateElementUid(element: any, index: number): Promise<string> {
   try {
@@ -231,13 +231,13 @@ async function generateElementUid(element: any, index: number): Promise<string> 
 }
 
 /**
- * 递归获取页面所有元素的快照
+ * Recursively get snapshots of all page elements
  */
 async function getElementsSnapshot(container: any, prefix: string = ''): Promise<ElementSnapshot[]> {
   const elements: ElementSnapshot[] = [];
 
   try {
-    // 获取所有子元素
+    // Get all child elements
     const childElements = await container.$$('*').catch(() => []);
 
     for (let i = 0; i < childElements.length; i++) {
@@ -251,17 +251,17 @@ async function getElementsSnapshot(container: any, prefix: string = ''): Promise
           tagName: element.tagName || 'unknown',
         };
 
-        // 获取元素文本
+        // Get element text
         try {
           const text = await element.text();
           if (text && text.trim()) {
             snapshot.text = text.trim();
           }
         } catch (error) {
-          // 忽略无法获取文本的元素
+          // Ignore elements that cannot get text
         }
 
-        // 获取元素位置信息
+        // Get element position info
         try {
           const [size, offset] = await Promise.all([
             element.size(),
@@ -275,10 +275,10 @@ async function getElementsSnapshot(container: any, prefix: string = ''): Promise
             height: size.height
           };
         } catch (error) {
-          // 忽略无法获取位置的元素
+          // Ignore elements that cannot get position
         }
 
-        // 获取常用属性
+        // Get common attributes
         try {
           const attributes: Record<string, string> = {};
           const commonAttrs = ['class', 'id', 'data-*'];
@@ -289,7 +289,7 @@ async function getElementsSnapshot(container: any, prefix: string = ''): Promise
                 attributes[attr] = value;
               }
             } catch (error) {
-              // 忽略不存在的属性
+              // Ignore non-existent attributes
             }
           }
 
@@ -297,12 +297,12 @@ async function getElementsSnapshot(container: any, prefix: string = ''): Promise
             snapshot.attributes = attributes;
           }
         } catch (error) {
-          // 忽略属性获取错误
+          // Ignore attribute retrieval errors
         }
 
         elements.push(snapshot);
 
-        // 存储uid到ElementMapInfo的映射
+        // Store uid to ElementMapInfo mapping
         state.elementMap.set(fullUid, {
           selector: fullUid,
           index: 0
@@ -320,27 +320,27 @@ async function getElementsSnapshot(container: any, prefix: string = ''): Promise
 }
 
 /**
- * 处理资源列表请求
- * 提供可用的资源，如连接状态和页面快照
+ * Handle resource list request
+ * Provide available resources such as connection status and page snapshots
  */
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
   const resources = [];
 
-  // 连接状态资源
+  // Connection status resource
   resources.push({
     uri: "weixin://connection/status",
     mimeType: "application/json",
-    name: "连接状态",
-    description: "微信开发者工具连接状态"
+    name: "Connection Status",
+    description: "WeChat DevTools connection status"
   });
 
-  // 如果已连接，提供页面快照资源
+  // If connected, provide page snapshot resource
   if (state.miniProgram && state.currentPage) {
     resources.push({
       uri: "weixin://page/snapshot",
       mimeType: "application/json",
-      name: "页面快照",
-      description: "当前页面的元素快照"
+      name: "Page Snapshot",
+      description: "Current page element snapshot"
     });
   }
 
@@ -348,7 +348,7 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
 });
 
 /**
- * 处理资源读取请求
+ * Handle resource read request
  */
 server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   const url = new URL(request.params.uri);
@@ -371,7 +371,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
   if (url.pathname === "/page/snapshot") {
     if (!state.currentPage) {
-      throw new Error("当前没有活动页面");
+      throw new Error("No active page currently");
     }
 
     try {
@@ -389,35 +389,35 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
         }]
       };
     } catch (error) {
-      throw new Error(`获取页面快照失败: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Failed to get page snapshot: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  throw new Error(`未知的资源: ${request.params.uri}`);
+  throw new Error(`Unknown resource: ${request.params.uri}`);
 });
 
 /**
- * 处理工具列表请求
- * 提供可用的微信自动化工具（包含所有模块化工具）
+ * Handle tool list request
+ * Provide available WeChat automation tools (including all modular tools)
  */
 server.setRequestHandler(ListToolsRequestSchema, async () => {
-  // 动态生成工具列表，包含所有29个工具
+  // Dynamically generate tool list, including all 29 tools
   const tools = allTools.map(tool => convertToolDefinition(tool));
 
   return { tools };
 });
 
 /**
- * 处理工具调用请求
- * 执行微信自动化相关操作
+ * Handle tool call request
+ * Execute WeChat automation related operations
  */
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   switch (request.params.name) {
     case "connect_devtools": {
-      // 安全地提取参数，避免将undefined转换为字符串"undefined"
+      // Safely extract parameters, avoid converting undefined to string "undefined"
       const projectPathArg = request.params.arguments?.projectPath;
       if (!projectPathArg || typeof projectPathArg !== 'string') {
-        throw new Error("项目路径是必需的，且必须是有效的字符串路径");
+        throw new Error("Project path is required and must be a valid string path");
       }
       const projectPath = String(projectPathArg);
 
@@ -425,14 +425,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const port = request.params.arguments?.port ? Number(request.params.arguments.port) : undefined;
 
       try {
-        // 处理@playground/wx格式的路径，转换为绝对文件系统路径
+        // Handle @playground/wx format paths, convert to absolute filesystem path
         let resolvedProjectPath = projectPath;
         if (projectPath.startsWith('@playground/')) {
-          // 转换为相对路径，然后解析为绝对路径
+          // Convert to relative path, then resolve to absolute path
           const relativePath = projectPath.replace('@playground/', 'playground/');
           resolvedProjectPath = path.resolve(process.cwd(), relativePath);
         } else if (!path.isAbsolute(projectPath)) {
-          // 如果不是绝对路径，转换为绝对路径
+          // If not absolute path, convert to absolute path
           resolvedProjectPath = path.resolve(process.cwd(), projectPath);
         }
 
@@ -440,26 +440,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (cliPath) options.cliPath = cliPath;
         if (port) options.port = port;
 
-        // 启动并连接微信开发者工具
+        // Launch and connect to WeChat DevTools
         state.miniProgram = await automator.launch(options);
 
-        // 获取当前页面
+        // Get current page
         state.currentPage = await state.miniProgram.currentPage();
 
         return {
           content: [{
             type: "text",
-            text: `成功连接到微信开发者工具\n项目路径: ${resolvedProjectPath}\n当前页面: ${state.currentPage ? await state.currentPage.path : '未知'}`
+            text: `Successfully connected to WeChat DevTools\nProject path: ${resolvedProjectPath}\nCurrent page: ${state.currentPage ? await state.currentPage.path : 'Unknown'}`
           }]
         };
       } catch (error) {
-        throw new Error(`连接微信开发者工具失败: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Failed to connect to WeChat DevTools: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
     case "get_current_page": {
       if (!state.miniProgram) {
-        throw new Error("请先连接到微信开发者工具");
+        throw new Error("Please connect to WeChat DevTools first");
       }
 
       try {
@@ -469,24 +469,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return {
           content: [{
             type: "text",
-            text: `当前页面: ${pagePath}`
+            text: `Current page: ${pagePath}`
           }]
         };
       } catch (error) {
-        throw new Error(`获取当前页面失败: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Failed to get current page: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
     case "get_page_snapshot": {
       if (!state.currentPage) {
-        throw new Error("请先获取当前页面");
+        throw new Error("Please get the current page first");
       }
 
       try {
-        // 清空之前的元素映射
+        // Clear previous element mapping
         state.elementMap.clear();
 
-        // 获取页面快照
+        // Get page snapshot
         const elements = await getElementsSnapshot(state.currentPage);
         const snapshot: PageSnapshot = {
           path: await state.currentPage.path,
@@ -496,11 +496,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return {
           content: [{
             type: "text",
-            text: `页面快照获取成功\n页面路径: ${snapshot.path}\n元素数量: ${elements.length}\n\n${JSON.stringify(snapshot, null, 2)}`
+            text: `Page snapshot obtained successfully\nPage path: ${snapshot.path}\nElement count: ${elements.length}\n\n${JSON.stringify(snapshot, null, 2)}`
           }]
         };
       } catch (error) {
-        throw new Error(`获取页面快照失败: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Failed to get page snapshot: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
@@ -509,111 +509,111 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const dblClick = Boolean(request.params.arguments?.dblClick);
 
       if (!uid) {
-        throw new Error("元素uid是必需的");
+        throw new Error("Element uid is required");
       }
 
       if (!state.currentPage) {
-        throw new Error("请先获取当前页面");
+        throw new Error("Please get the current page first");
       }
 
       try {
-        // 通过uid查找元素
+        // Find element by uid
         const mapInfo = state.elementMap.get(uid);
         if (!mapInfo) {
-          throw new Error(`找不到uid为 ${uid} 的元素，请先获取页面快照`);
+          throw new Error(`Element with uid ${uid} not found, please get page snapshot first`);
         }
 
-        // 获取所有匹配的元素
+        // Get all matching elements
         const elements = await state.currentPage.$(mapInfo.selector);
         if (!elements || mapInfo.index >= elements.length) {
-          throw new Error(`无法找到选择器为 ${mapInfo.selector} 的元素，索引: ${mapInfo.index}`);
+          throw new Error(`Cannot find element with selector ${mapInfo.selector}, index: ${mapInfo.index}`);
         }
 
         const element = elements[mapInfo.index];
 
-        // 执行点击操作
+        // Execute click operation
         await element.tap();
 
-        // 如果是双击，再点击一次
+        // If double click, click again
         if (dblClick) {
-          await new Promise(resolve => setTimeout(resolve, 100)); // 短暂延迟
+          await new Promise(resolve => setTimeout(resolve, 100)); // Brief delay
           await element.tap();
         }
 
         return {
           content: [{
             type: "text",
-            text: `${dblClick ? '双击' : '点击'}元素成功\nUID: ${uid}\n选择器: ${mapInfo.selector}[${mapInfo.index}]`
+            text: `${dblClick ? 'Double-clicked' : 'Clicked'} element successfully\nUID: ${uid}\nSelector: ${mapInfo.selector}[${mapInfo.index}]`
           }]
         };
       } catch (error) {
-        throw new Error(`点击元素失败: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Failed to click element: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
     case "screenshot": {
       if (!state.miniProgram) {
-        throw new Error("请先连接到微信开发者工具");
+        throw new Error("Please connect to WeChat DevTools first");
       }
 
       const path = request.params.arguments?.path ? String(request.params.arguments.path) : undefined;
 
       try {
-        // 确保页面状态稳定
+        // Ensure page state is stable
         if (!state.currentPage) {
           state.currentPage = await state.miniProgram.currentPage();
         }
 
-        // 确保页面完全加载和稳定
+        // Ensure page is fully loaded and stable
         try {
           if (state.currentPage && typeof state.currentPage.waitFor === 'function') {
-            // 等待页面稳定，增加等待时间
+            // Wait for page to stabilize, increase wait time
             await state.currentPage.waitFor(1000);
           }
         } catch (waitError) {
-          console.warn('页面等待失败，继续尝试截图:', waitError)
+          console.warn('Page wait failed, continue attempting screenshot:', waitError)
         }
 
-        // 重试机制执行截图
+        // Execute screenshot with retry mechanism
         let result: string | undefined = undefined
         let lastError: Error | undefined
 
         for (let attempt = 1; attempt <= 3; attempt++) {
           try {
             if (path) {
-              // 保存到指定路径
+              // Save to specified path
               await state.miniProgram.screenshot({ path });
               result = path
               break
             } else {
-              // 返回base64数据
+              // Return base64 data
               const base64Data = await state.miniProgram.screenshot();
               if (base64Data && typeof base64Data === 'string' && base64Data.length > 0) {
                 result = base64Data
                 break
               } else {
-                throw new Error('截图返回空数据')
+                throw new Error('Screenshot returned empty data')
               }
             }
           } catch (error) {
             lastError = error instanceof Error ? error : new Error(String(error))
 
             if (attempt < 3) {
-              // 重试前等待更长时间，让页面稳定
+              // Wait longer before retry to let page stabilize
               await new Promise(resolve => setTimeout(resolve, 1000 + attempt * 500))
             }
           }
         }
 
         if (!result && !path) {
-          throw new Error(`截图失败，已重试3次。最后错误: ${lastError?.message || '未知错误'}`)
+          throw new Error(`Screenshot failed after 3 retries. Last error: ${lastError?.message || 'Unknown error'}`)
         }
 
         if (path) {
           return {
             content: [{
               type: "text",
-              text: `截图已保存到: ${path}`
+              text: `Screenshot saved to: ${path}`
             }]
           };
         } else {
@@ -621,7 +621,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           return {
             content: [{
               type: "text",
-              text: `截图获取成功\nBase64数据长度: ${base64Data.length} 字符\n格式: ${base64Data.startsWith('data:image') ? 'data URL' : 'base64'}`
+              text: `Screenshot obtained successfully\nBase64 data length: ${base64Data.length} characters\nFormat: ${base64Data.startsWith('data:image') ? 'data URL' : 'base64'}`
             }, {
               type: "image",
               data: base64Data,
@@ -630,36 +630,36 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           };
         }
       } catch (error) {
-        throw new Error(`截图失败: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Screenshot failed: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
     default: {
-      // 使用模块化工具处理器处理新工具
+      // Use modular tool handler to handle new tools
       const toolHandler = toolHandlers.get(request.params.name);
       if (toolHandler) {
         try {
           const toolContext = createToolContext();
           const mockResponse = new MockResponse();
 
-          // 创建模拟的请求对象
+          // Create mock request object
           const toolRequest: ToolRequest = {
             params: request.params.arguments || {}
           };
 
-          // 调用模块化工具处理器
+          // Call modular tool handler
           await toolHandler.handler(toolRequest, mockResponse, toolContext);
 
-          // 更新全局状态（从ToolContext同步回来）
+          // Update global state (synchronized back from ToolContext)
           state.miniProgram = toolContext.miniProgram;
           state.currentPage = toolContext.currentPage;
           state.elementMap = toolContext.elementMap;
           state.consoleStorage = toolContext.consoleStorage;
 
-          // 返回响应
+          // Return response
           const responseLines = mockResponse.getLines();
           if (responseLines.length === 0) {
-            responseLines.push(`工具 ${request.params.name} 执行成功`);
+            responseLines.push(`Tool ${request.params.name} executed successfully`);
           }
 
           return {
@@ -669,11 +669,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }]
           };
         } catch (error) {
-          throw new Error(`工具 ${request.params.name} 执行失败: ${error instanceof Error ? error.message : String(error)}`);
+          throw new Error(`Tool ${request.params.name} execution failed: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
 
-      throw new Error(`未知的工具: ${request.params.name}`);
+      throw new Error(`Unknown tool: ${request.params.name}`);
     }
   }
 });

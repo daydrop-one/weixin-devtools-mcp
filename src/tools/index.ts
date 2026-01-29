@@ -1,11 +1,11 @@
 /**
- * 工具模块导出
- * 统一导出所有工具定义
+ * Tool Module Exports
+ * Unified export of all tool definitions
  */
 
 import { ToolDefinition } from './ToolDefinition.js';
 
-// 导入各个模块的工具
+// Import tools from each module
 import { connectDevtoolsTool, connectDevtoolsEnhancedTool, getCurrentPageTool } from './connection.js';
 import { getPageSnapshotTool } from './snapshot.js';
 import {
@@ -57,22 +57,22 @@ import {
 import { evaluateScript } from './script.js';
 
 /**
- * 所有可用工具的列表
+ * List of all available tools
  */
 export const allTools: ToolDefinition[] = [
-  // 连接管理工具
-  connectDevtoolsTool,              // 传统连接方式（兼容性）
-  connectDevtoolsEnhancedTool,      // 智能连接方式（推荐）
+  // Connection management tools
+  connectDevtoolsTool,              // Traditional connection (compatibility)
+  connectDevtoolsEnhancedTool,      // Smart connection (recommended)
   getCurrentPageTool,
 
-  // 页面快照工具
+  // Page snapshot tools
   getPageSnapshotTool,
 
-  // 页面查询和等待工具
+  // Page query and wait tools
   querySelectorTool,
   waitForTool,
 
-  // 输入交互工具
+  // Input interaction tools
   clickTool,
   inputTextTool,
   getValueTool,
@@ -81,14 +81,14 @@ export const allTools: ToolDefinition[] = [
   toggleSwitchTool,
   setSliderTool,
 
-  // 断言验证工具
+  // Assertion validation tools
   assertExistsTool,
   assertVisibleTool,
   assertTextTool,
   assertAttributeTool,
   assertStateTool,
 
-  // 页面导航工具
+  // Page navigation tools
   navigateToTool,
   navigateBackTool,
   switchTabTool,
@@ -96,7 +96,7 @@ export const allTools: ToolDefinition[] = [
   getPageInfoTool,
   redirectToTool,
 
-  // 调试工具
+  // Debug tools
   screenshotTool,
   evaluateScript,
   startConsoleMonitoringTool,
@@ -106,32 +106,32 @@ export const allTools: ToolDefinition[] = [
   getConsoleTool,
   clearConsoleTool,
 
-  // 网络监控工具
+  // Network monitoring tools
   startNetworkMonitoringTool,
   stopNetworkMonitoringTool,
   getNetworkRequestsTool,
   clearNetworkRequestsTool,
   diagnoseInterceptorTool,
 
-  // 诊断工具
+  // Diagnostic tools
   diagnoseConnectionTool,
   checkEnvironmentTool,
   debugPageElementsTool,
 ];
 
 /**
- * 按名称获取工具
+ * Get tool by name
  */
 export function getToolByName(name: string): ToolDefinition | undefined {
   return allTools.find(tool => tool.name === name);
 }
 
 /**
- * 获取所有工具名称
+ * Get all tool names
  */
 export function getAllToolNames(): string[] {
   return allTools.map(tool => tool.name);
 }
 
-// 重新导出工具定义相关类型和函数
+// Re-export tool definition related types and functions
 export * from './ToolDefinition.js';

@@ -1,6 +1,6 @@
 /**
- * Script工具单元测试
- * 验证 evaluate_script 工具的功能
+ * Script Tool Unit Tests
+ * Verify evaluate_script tool functionality
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -8,8 +8,8 @@ import { evaluateScript } from '../../src/tools/script.js';
 import { ToolContext, SimpleToolResponse } from '../../src/tools/ToolDefinition.js';
 
 describe('Script Tool Unit Tests', () => {
-  // 创建模拟的工具上下文
-  // 注意：使用 Symbol 作为默认值，避免 null/undefined 被 ?? 操作符替换
+  // Create mock tool context
+  // Note: Use Symbol as default value to avoid null/undefined being replaced by ?? operator
   const DEFAULT_RESULT = Symbol('default');
   const createMockContext = (evaluateResult: any = DEFAULT_RESULT): ToolContext => ({
     miniProgram: {
@@ -35,8 +35,8 @@ describe('Script Tool Unit Tests', () => {
 
   const createMockResponse = () => new SimpleToolResponse();
 
-  describe('工具定义', () => {
-    it('应该有正确的工具名称', () => {
+  describe('Tool definition', () => {
+    it('should have correct tool name', () => {
       expect(evaluateScript.name).toBe('evaluate_script');
     });
 

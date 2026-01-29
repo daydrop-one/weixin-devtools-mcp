@@ -1,6 +1,6 @@
 /**
- * Console工具单元测试
- * 验证console工具的代码结构和类型定义
+ * Console Tool Unit Tests
+ * Verify console tool code structure and type definitions
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -22,7 +22,7 @@ import {
 import { createIdGenerator } from '../../src/utils/idGenerator.js';
 
 describe('Console Tools Unit Tests', () => {
-  // 创建模拟的工具上下文（使用新的 navigations 结构）
+  // Create mock tool context (using new navigations structure)
   const createMockContext = (): ToolContext => ({
     miniProgram: {
       on: vi.fn(),
@@ -43,8 +43,8 @@ describe('Console Tools Unit Tests', () => {
     getElementByUid: vi.fn(),
   });
 
-  it('应该正确定义所有console工具（包括新工具）', () => {
-    // 验证工具定义的基本属性
+  it('should correctly define all console tools (including new tools)', () => {
+    // Verify basic properties of tool definitions
     expect(startConsoleMonitoringTool.name).toBe('start_console_monitoring');
     expect(stopConsoleMonitoringTool.name).toBe('stop_console_monitoring');
     expect(listConsoleMessagesTool.name).toBe('list_console_messages');
@@ -52,7 +52,7 @@ describe('Console Tools Unit Tests', () => {
     expect(getConsoleTool.name).toBe('get_console');
     expect(clearConsoleTool.name).toBe('clear_console');
 
-    // 验证工具有描述
+    // Verify tools have descriptions
     expect(startConsoleMonitoringTool.description).toBeTruthy();
     expect(stopConsoleMonitoringTool.description).toBeTruthy();
     expect(listConsoleMessagesTool.description).toBeTruthy();
@@ -60,7 +60,7 @@ describe('Console Tools Unit Tests', () => {
     expect(getConsoleTool.description).toBeTruthy();
     expect(clearConsoleTool.description).toBeTruthy();
 
-    // 验证工具有schema
+    // Verify tools have schemas
     expect(startConsoleMonitoringTool.schema).toBeTruthy();
     expect(stopConsoleMonitoringTool.schema).toBeTruthy();
     expect(listConsoleMessagesTool.schema).toBeTruthy();
@@ -68,7 +68,7 @@ describe('Console Tools Unit Tests', () => {
     expect(getConsoleTool.schema).toBeTruthy();
     expect(clearConsoleTool.schema).toBeTruthy();
 
-    // 验证工具有handler
+    // Verify tools have handlers
     expect(typeof startConsoleMonitoringTool.handler).toBe('function');
     expect(typeof stopConsoleMonitoringTool.handler).toBe('function');
     expect(typeof listConsoleMessagesTool.handler).toBe('function');
@@ -77,8 +77,8 @@ describe('Console Tools Unit Tests', () => {
     expect(typeof clearConsoleTool.handler).toBe('function');
   });
 
-  it('应该正确定义Console相关的类型', () => {
-    // 创建测试用的ConsoleMessage
+  it('should correctly define Console-related types', () => {
+    // Create test ConsoleMessage
     const consoleMessage: ConsoleMessage = {
       type: 'log',
       args: ['test message'],
@@ -91,7 +91,7 @@ describe('Console Tools Unit Tests', () => {
     expect(consoleMessage.timestamp).toBeTruthy();
     expect(consoleMessage.source).toBe('miniprogram');
 
-    // 创建测试用的ExceptionMessage
+    // Create test ExceptionMessage
     const exceptionMessage: ExceptionMessage = {
       message: 'Test error',
       stack: 'Error stack trace',
@@ -104,7 +104,7 @@ describe('Console Tools Unit Tests', () => {
     expect(exceptionMessage.timestamp).toBeTruthy();
     expect(exceptionMessage.source).toBe('miniprogram');
 
-    // 创建测试用的ConsoleStorage（使用新的 navigations 结构）
+    // Create test ConsoleStorage (using new navigations structure)
     const consoleStorage: ConsoleStorage = {
       navigations: [{
         messages: [consoleMessage],
@@ -124,14 +124,14 @@ describe('Console Tools Unit Tests', () => {
     expect(consoleStorage.startTime).toBeTruthy();
   });
 
-  it('应该正确处理schema验证（包括新工具）', () => {
-    // 测试 startConsoleMonitoringTool 的 schema
+  it('should correctly handle schema validation (including new tools)', () => {
+    // Test startConsoleMonitoringTool schema
     const startSchema = startConsoleMonitoringTool.schema;
     const validStartParams = { clearExisting: true };
     const startResult = startSchema.safeParse(validStartParams);
     expect(startResult.success).toBe(true);
 
-    // 测试 listConsoleMessagesTool 的 schema
+    // Test listConsoleMessagesTool schema
     const listSchema = listConsoleMessagesTool.schema;
     const validListParams = {
       pageSize: 20,
@@ -142,13 +142,13 @@ describe('Console Tools Unit Tests', () => {
     const listResult = listSchema.safeParse(validListParams);
     expect(listResult.success).toBe(true);
 
-    // 测试 getConsoleMessageTool 的 schema
+    // Test getConsoleMessageTool schema
     const getMessageSchema = getConsoleMessageTool.schema;
     const validGetMessageParams = { msgid: 1 };
     const getMessageResult = getMessageSchema.safeParse(validGetMessageParams);
     expect(getMessageResult.success).toBe(true);
 
-    // 测试 getConsoleTool 的 schema
+    // Test getConsoleTool schema
     const getSchema = getConsoleTool.schema;
     const validGetParams = {
       type: 'all' as const,
@@ -158,14 +158,14 @@ describe('Console Tools Unit Tests', () => {
     const getResult = getSchema.safeParse(validGetParams);
     expect(getResult.success).toBe(true);
 
-    // 测试 clearConsoleTool 的 schema
+    // Test clearConsoleTool schema
     const clearSchema = clearConsoleTool.schema;
     const validClearParams = { type: 'console' as const };
     const clearResult = clearSchema.safeParse(validClearParams);
     expect(clearResult.success).toBe(true);
   });
 
-  it('应该能正确创建模拟的工具上下文（使用新存储结构）', () => {
+  it('should correctly create mock tool context (using new storage structure)', () => {
     const context = createMockContext();
 
     expect(context.miniProgram).toBeTruthy();
@@ -182,7 +182,7 @@ describe('Console Tools Unit Tests', () => {
     expect(typeof context.consoleStorage.idGenerator).toBe('function');
   });
 
-  it('应该验证console消息的数据结构', () => {
+  it('should verify console message data structure', () => {
     const sampleConsoleMessage: ConsoleMessage = {
       type: 'error',
       args: ['Error occurred', { details: 'some details' }],
@@ -190,17 +190,17 @@ describe('Console Tools Unit Tests', () => {
       source: 'miniprogram'
     };
 
-    // 验证类型枚举值
+    // Verify type enum values
     const validTypes: ConsoleMessage['type'][] = ['log', 'warn', 'error', 'info', 'debug'];
     expect(validTypes).toContain(sampleConsoleMessage.type);
 
-    // 验证args可以包含各种类型
+    // Verify args can contain various types
     expect(Array.isArray(sampleConsoleMessage.args)).toBe(true);
     expect(sampleConsoleMessage.args[0]).toBe('Error occurred');
     expect(typeof sampleConsoleMessage.args[1]).toBe('object');
   });
 
-  it('应该验证exception消息的数据结构', () => {
+  it('should verify exception message data structure', () => {
     const sampleExceptionMessage: ExceptionMessage = {
       message: 'ReferenceError: undefined is not defined',
       stack: 'ReferenceError: undefined is not defined\n    at test.js:1:1',
@@ -235,24 +235,24 @@ describe('New Console Tools - list_console_messages', () => {
     };
   });
 
-  it('应该支持分页参数', () => {
+  it('should support pagination parameters', () => {
     const schema = listConsoleMessagesTool.schema;
 
-    // 测试有效的分页参数
+    // Test valid pagination parameters
     const validParams = { pageSize: 20, pageIdx: 0 };
     const result = schema.safeParse(validParams);
     expect(result.success).toBe(true);
 
-    // 测试无效的分页参数（负数）
+    // Test invalid pagination parameters (negative)
     const invalidParams = { pageSize: -1, pageIdx: 0 };
     const invalidResult = schema.safeParse(invalidParams);
     expect(invalidResult.success).toBe(false);
   });
 
-  it('应该支持扩展的类型过滤（17种类型）', () => {
+  it('should support extended type filtering (17 types)', () => {
     const schema = listConsoleMessagesTool.schema;
 
-    // 测试所有支持的类型
+    // Test all supported types
     const validTypes = ['log', 'debug', 'info', 'error', 'warn', 'dir', 'dirxml',
                         'table', 'trace', 'clear', 'group', 'groupCollapsed',
                         'groupEnd', 'assert', 'count', 'timeEnd', 'verbose'];
@@ -262,8 +262,8 @@ describe('New Console Tools - list_console_messages', () => {
     expect(result.success).toBe(true);
   });
 
-  it('应该正确返回简短格式的消息列表', async () => {
-    // 添加测试消息
+  it('should correctly return message list in short format', async () => {
+    // Add test messages
     const msg1: ConsoleMessage = {
       msgid: 1,
       type: 'log',
@@ -292,7 +292,7 @@ describe('New Console Tools - list_console_messages', () => {
 
     const output = response.getResponseText();
 
-    // 验证输出包含简短格式
+    // Verify output contains short format
     expect(output).toContain('msgid=1');
     expect(output).toContain('msgid=2');
     expect(output).toContain('[log]');
@@ -300,8 +300,8 @@ describe('New Console Tools - list_console_messages', () => {
     expect(output).toContain('(2 args)');
   });
 
-  it('应该正确处理分页', async () => {
-    // 添加 25 条消息
+  it('should correctly handle pagination', async () => {
+    // Add 25 messages
     for (let i = 1; i <= 25; i++) {
       const msg: ConsoleMessage = {
         msgid: i,
@@ -315,7 +315,7 @@ describe('New Console Tools - list_console_messages', () => {
       context.consoleStorage.messageIdMap.set(i, msg);
     }
 
-    // 第一页（0-19）
+    // First page (0-19)
     const request1 = { params: { pageSize: 20, pageIdx: 0 } };
     const response1 = new SimpleToolResponse();
     await listConsoleMessagesTool.handler(request1, response1, context);
@@ -325,7 +325,7 @@ describe('New Console Tools - list_console_messages', () => {
     expect(output1).toContain('Showing: 1-20');
     expect(output1).toContain('Next page: 1');
 
-    // 第二页（20-24）
+    // Second page (20-24)
     const request2 = { params: { pageSize: 20, pageIdx: 1 } };
     const response2 = new SimpleToolResponse();
     await listConsoleMessagesTool.handler(request2, response2, context);
@@ -336,8 +336,8 @@ describe('New Console Tools - list_console_messages', () => {
     expect(output2).toContain('Previous page: 0');
   });
 
-  it('应该支持类型过滤', async () => {
-    // 添加不同类型的消息
+  it('should support type filtering', async () => {
+    // Add messages of different types
     const logMsg: ConsoleMessage = {
       msgid: 1,
       type: 'log',
@@ -359,7 +359,7 @@ describe('New Console Tools - list_console_messages', () => {
     context.consoleStorage.messageIdMap.set(1, logMsg);
     context.consoleStorage.messageIdMap.set(2, errorMsg);
 
-    // 只获取 error 类型
+    // Get only error type
     const request = { params: { types: ['error'] } };
     const response = new SimpleToolResponse();
     await listConsoleMessagesTool.handler(request, response, context);
@@ -392,7 +392,7 @@ describe('New Console Tools - get_console_message', () => {
     };
   });
 
-  it('应该通过msgid获取详细消息', async () => {
+  it('should get detailed message by msgid', async () => {
     const msg: ConsoleMessage = {
       msgid: 1,
       type: 'error',
@@ -412,7 +412,7 @@ describe('New Console Tools - get_console_message', () => {
 
     const output = response.getResponseText();
 
-    // 验证详细格式
+    // Verify detailed format
     expect(output).toContain('ID: 1');
     expect(output).toContain('Type: error');
     expect(output).toContain('Message: Detailed error');
@@ -422,7 +422,7 @@ describe('New Console Tools - get_console_message', () => {
     expect(output).toContain('Arg #1:');
   });
 
-  it('应该正确处理Exception消息', async () => {
+  it('should correctly handle Exception messages', async () => {
     const exception: ExceptionMessage = {
       msgid: 2,
       message: 'ReferenceError: x is not defined',
@@ -441,30 +441,30 @@ describe('New Console Tools - get_console_message', () => {
 
     const output = response.getResponseText();
 
-    // 验证Exception专属字段
+    // Verify exception-specific fields
     expect(output).toContain('ID: 2');
     expect(output).toContain('Type: exception');
     expect(output).toContain('Message: ReferenceError: x is not defined');
     expect(output).toContain('### Stack Trace');
   });
 
-  it('应该在找不到msgid时抛出错误', async () => {
+  it('should throw error when msgid not found', async () => {
     const request = { params: { msgid: 999 } };
     const response = new SimpleToolResponse();
 
     await expect(
       getConsoleMessageTool.handler(request, response, context)
-    ).rejects.toThrow('未找到 msgid=999 的消息');
+    ).rejects.toThrow('Message with msgid=999 not found');
   });
 
-  it('应该验证msgid参数', () => {
+  it('should validate msgid parameter', () => {
     const schema = getConsoleMessageTool.schema;
 
-    // 有效参数
+    // Valid parameters
     expect(schema.safeParse({ msgid: 1 }).success).toBe(true);
     expect(schema.safeParse({ msgid: 100 }).success).toBe(true);
 
-    // 无效参数
+    // Invalid parameters
     expect(schema.safeParse({}).success).toBe(false);
     expect(schema.safeParse({ msgid: 'invalid' }).success).toBe(false);
     expect(schema.safeParse({ msgid: -1 }).success).toBe(false);

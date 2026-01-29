@@ -1,6 +1,6 @@
 /**
- * Console功能集成测试
- * 测试微信开发者工具console和exception监听功能
+ * Console Feature Integration Tests
+ * Test WeChat DevTools console and exception listener functionality
  */
 
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
@@ -13,10 +13,10 @@ import {
   withTimeout
 } from '../utils/test-utils.js';
 
-// 只在环境变量RUN_INTEGRATION_TESTS为true时运行
+// Only run when environment variable RUN_INTEGRATION_TESTS is true
 const shouldRun = process.env.RUN_INTEGRATION_TESTS === 'true';
 
-// 测试配置
+// Test configuration
 const TEST_PROJECT_PATH = '/Users/didi/workspace/wooPro/weixin-devtools-mcp/playground/wx';
 const TEST_CLI_PATH = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli';
 
@@ -27,55 +27,55 @@ describe.skipIf(!shouldRun)('Console Integration Tests', () => {
   let environmentReady = false;
 
   beforeAll(async () => {
-    console.log('🔧 检查Console集成测试环境...');
+    console.log('🔧 Checking Console integration test environment...');
 
-    // 检查环境是否满足测试要求
+    // Check if environment meets test requirements
     const envCheck = await checkIntegrationTestEnvironment(TEST_PROJECT_PATH, TEST_CLI_PATH);
 
     if (!envCheck.isReady) {
-      console.error('❌ Console集成测试环境不满足要求:');
+      console.error('❌ Console integration test environment does not meet requirements:');
       envCheck.issues.forEach(issue => console.error(`  • ${issue}`));
-      console.log('\n💡 解决方案:');
-      console.log('  1. 确保微信开发者工具已安装并可通过CLI访问');
-      console.log('  2. 检查项目路径是否正确且包含app.json和project.config.json');
-      console.log('  3. 确保开发者工具的自动化权限已开启');
+      console.log('\n💡 Solutions:');
+      console.log('  1. Ensure WeChat DevTools is installed and CLI is accessible');
+      console.log('  2. Check project path is correct and contains app.json and project.config.json');
+      console.log('  3. Ensure DevTools automation permission is enabled');
 
-      // 环境不满足时，标记为未准备好但不抛出错误
+      // Mark as not ready but don't throw error when environment is not satisfied
       environmentReady = false;
       return;
     }
 
-    console.log('✅ 环境检查通过');
+    console.log('✅ Environment check passed');
 
-    // 显示警告信息（如端口冲突）
+    // Display warning messages (such as port conflicts)
     if (envCheck.warnings && envCheck.warnings.length > 0) {
-      console.log('⚠️ 检测到潜在问题:');
+      console.log('⚠️ Detected potential issues:');
       envCheck.warnings.forEach(warning => console.log(`  • ${warning}`));
     }
 
-    // 尝试清理冲突的微信开发者工具实例
-    console.log('🧹 检查并清理冲突实例...');
+    // Try to clean up conflicting WeChat DevTools instances
+    console.log('🧹 Checking and cleaning up conflicting instances...');
     const cleanupSuccess = await cleanupConflictingWeChatInstances(TEST_PROJECT_PATH, TEST_CLI_PATH);
     if (!cleanupSuccess) {
-      console.log('⚠️ 清理未完全成功，测试可能遇到端口冲突');
+      console.log('⚠️ Cleanup not fully successful, tests may encounter port conflicts');
     }
 
     environmentReady = true;
 
     try {
-      // 分配一个可用端口
-      console.log('🔌 分配测试端口...');
+      // Allocate an available port
+      console.log('🔌 Allocating test port...');
       testPort = await findAvailablePort(9425);
-      console.log(`✅ 已分配端口: ${testPort}`);
+      console.log(`✅ Port allocated: ${testPort}`);
 
-      console.log('正在连接微信开发者工具...');
+      console.log('Connecting to WeChat DevTools...');
       const result = await withTimeout(
         connectDevtools({
           projectPath: TEST_PROJECT_PATH,
           port: testPort,
         }),
         30000,
-        'Console测试连接超时'
+        'Console test connection timeout'
       );
 
       miniProgram = result.miniProgram;

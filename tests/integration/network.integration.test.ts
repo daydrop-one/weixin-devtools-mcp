@@ -1,6 +1,6 @@
 /**
- * 网络监听功能集成测试
- * 测试微信开发者工具网络请求拦截和监听功能
+ * Network Monitoring Feature Integration Tests
+ * Test WeChat DevTools network request interception and monitoring functionality
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -13,10 +13,10 @@ import {
   withTimeout
 } from '../utils/test-utils.js';
 
-// 只在环境变量RUN_INTEGRATION_TESTS为true时运行
+// Only run when environment variable RUN_INTEGRATION_TESTS is true
 const shouldRun = process.env.RUN_INTEGRATION_TESTS === 'true';
 
-// 测试配置
+// Test configuration
 const TEST_PROJECT_PATH = '/Users/didi/workspace/wooPro/weixin-devtools-mcp/playground/wx';
 const TEST_CLI_PATH = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli';
 
@@ -27,27 +27,27 @@ describe.skipIf(!shouldRun)('Network Monitoring Integration Tests', () => {
   let environmentReady = false;
 
   beforeAll(async () => {
-    console.log('🔧 检查网络监听集成测试环境...');
+    console.log('🔧 Checking Network monitoring integration test environment...');
 
-    // 检查环境是否满足测试要求
+    // Check if environment meets test requirements
     const envCheck = await checkIntegrationTestEnvironment(TEST_PROJECT_PATH, TEST_CLI_PATH);
 
     if (!envCheck.isReady) {
-      console.error('❌ 网络监听集成测试环境不满足要求:');
+      console.error('❌ Network monitoring integration test environment does not meet requirements:');
       envCheck.issues.forEach(issue => console.error(`  • ${issue}`));
-      console.log('\n💡 解决方案:');
-      console.log('  1. 确保微信开发者工具已安装并可通过CLI访问');
-      console.log('  2. 检查项目路径是否正确且包含app.json和project.config.json');
-      console.log('  3. 确保开发者工具的自动化权限已开启');
+      console.log('\n💡 Solutions:');
+      console.log('  1. Ensure WeChat DevTools is installed and CLI is accessible');
+      console.log('  2. Check project path is correct and contains app.json and project.config.json');
+      console.log('  3. Ensure DevTools automation permission is enabled');
 
-      // 环境不满足时，标记为未准备好但不抛出错误
+      // Mark as not ready but don't throw error when environment is not satisfied
       environmentReady = false;
       return;
     }
 
-    console.log('✅ 环境检查通过');
+    console.log('✅ Environment check passed');
 
-    // 显示警告信息（如端口冲突）
+    // Display warning messages (such as port conflicts)
     if (envCheck.warnings && envCheck.warnings.length > 0) {
       console.log('⚠️ 检测到潜在问题:');
       envCheck.warnings.forEach(warning => console.log(`  • ${warning}`));

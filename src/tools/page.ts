@@ -1,6 +1,6 @@
 /**
- * 页面查询和等待工具
- * 提供类似浏览器的$选择器和waitFor等待功能
+ * Page Query and Wait Tools
+ * Provides browser-like $ selector and waitFor wait functionality
  */
 
 import { z } from 'zod';
@@ -13,13 +13,13 @@ import {
 } from '../tools.js';
 
 /**
- * $ 选择器工具 - 通过CSS选择器查找页面元素
+ * $ selector tool - Find page elements by CSS selector
  */
 export const querySelectorTool = defineTool({
   name: '$',
-  description: '通过CSS选择器查找页面元素，返回匹配元素的详细信息',
+  description: 'Find page elements by CSS selector, return detailed information of matching elements',
   schema: z.object({
-    selector: z.string().min(1, '选择器不能为空').describe('CSS选择器，如：view.container、#myId、.myClass、text=按钮'),
+    selector: z.string().min(1, 'Selector cannot be empty').describe('CSS selector, e.g.: view.container, #myId, .myClass, text=button'),
   }),
   annotations: {
     audience: ['developers'],
@@ -27,13 +27,13 @@ export const querySelectorTool = defineTool({
   handler: async (request, response, context) => {
     const { selector } = request.params;
 
-    // 验证选择器
+    // Validate selector
     if (!selector || typeof selector !== 'string' || selector.trim() === '') {
-      throw new Error('选择器不能为空');
+      throw new Error('Selector cannot be empty');
     }
 
     if (!context.currentPage) {
-      throw new Error('请先获取当前页面');
+      throw new Error('Please get current page first');
     }
 
     try {
@@ -41,11 +41,11 @@ export const querySelectorTool = defineTool({
       const results = await queryElements(context.currentPage, context.elementMap, options);
 
       if (results.length === 0) {
-        response.appendResponseLine(`未找到匹配选择器 "${selector}" 的元素`);
+        response.appendResponseLine(`No elements found matching selector "${selector}"`);
         return;
       }
 
-      response.appendResponseLine(`找到 ${results.length} 个匹配元素:`);
+      response.appendResponseLine(`Found ${results.length} matching element(s):`);
       response.appendResponseLine('');
 
       for (let i = 0; i < results.length; i++) {
@@ -53,55 +53,55 @@ export const querySelectorTool = defineTool({
         response.appendResponseLine(`[${i + 1}] ${element.tagName} (uid: ${element.uid})`);
 
         if (element.text) {
-          response.appendResponseLine(`    文本: ${element.text}`);
+          response.appendResponseLine(`    Text: ${element.text}`);
         }
 
         if (element.attributes) {
           const attrs = Object.entries(element.attributes)
             .map(([key, value]) => `${key}="${value}"`)
             .join(' ');
-          response.appendResponseLine(`    属性: ${attrs}`);
+          response.appendResponseLine(`    Attributes: ${attrs}`);
         }
 
         if (element.position) {
           const { left, top, width, height } = element.position;
-          response.appendResponseLine(`    位置: (${left}, ${top}) 大小: ${width}x${height}`);
+          response.appendResponseLine(`    Position: (${left}, ${top}) Size: ${width}x${height}`);
         }
 
         response.appendResponseLine('');
       }
 
-      // 查询可能会发现新元素，包含快照信息
+      // Query may discover new elements, include snapshot info
       response.setIncludeSnapshot(true);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`查询元素失败: ${errorMessage}`);
+      response.appendResponseLine(`Element query failed: ${errorMessage}`);
       throw error;
     }
   },
 });
 
 /**
- * waitFor 等待工具 - 等待条件满足
+ * waitFor wait tool - Wait for condition to be met
  */
 export const waitForTool = defineTool({
   name: 'waitFor',
-  description: '等待条件满足，支持等待元素出现、消失、文本匹配等',
+  description: 'Wait for conditions to be met, supports waiting for element appearance, disappearance, text matching, etc.',
   schema: z.object({
-    // 支持三种模式:
-    // 1. 时间等待: { delay: 1000 }
-    // 2. 选择器等待: { selector: ".button" }
-    // 3. 复杂条件: { selector: ".button", text: "提交", timeout: 5000 }
-    delay: z.number().optional().describe('等待指定毫秒数（时间等待模式）'),
-    selector: z.string().optional().describe('等待元素选择器（选择器等待模式）'),
-    timeout: z.number().optional().default(5000).describe('超时时间(毫秒)，默认5000ms'),
-    text: z.string().optional().describe('等待元素包含指定文本'),
-    visible: z.boolean().optional().describe('等待元素可见状态，true为可见，false为隐藏'),
-    disappear: z.boolean().optional().default(false).describe('等待元素消失，默认false'),
+    // Supports three modes:
+    // 1. Time wait: { delay: 1000 }
+    // 2. Selector wait: { selector: ".button" }
+    // 3. Complex condition: { selector: ".button", text: "Submit", timeout: 5000 }
+    delay: z.number().optional().describe('Wait for specified milliseconds (time wait mode)'),
+    selector: z.string().optional().describe('Wait for element selector (selector wait mode)'),
+    timeout: z.number().optional().default(5000).describe('Timeout in milliseconds, default 5000ms'),
+    text: z.string().optional().describe('Wait for element containing specified text'),
+    visible: z.boolean().optional().describe('Wait for element visibility state, true for visible, false for hidden'),
+    disappear: z.boolean().optional().default(false).describe('Wait for element to disappear, default false'),
   }).refine(
     (data) => data.delay !== undefined || data.selector !== undefined,
-    { message: '必须提供 delay（时间等待）或 selector（选择器等待）' }
+    { message: 'Must provide either delay (time wait) or selector (selector wait)' }
   ),
   annotations: {
     audience: ['developers'],
@@ -110,36 +110,36 @@ export const waitForTool = defineTool({
     const options = request.params;
 
     if (!context.currentPage) {
-      throw new Error('请先获取当前页面');
+      throw new Error('Please get current page first');
     }
 
     try {
       const startTime = Date.now();
 
-      // 构建等待描述信息和实际等待参数
+      // Build wait description and actual wait parameters
       let waitDescription = '';
       let waitParam: number | string | WaitForOptions;
 
       if (options.delay !== undefined) {
-        // 时间等待模式
-        waitDescription = `等待 ${options.delay}ms`;
+        // Time wait mode
+        waitDescription = `Wait ${options.delay}ms`;
         waitParam = options.delay;
       } else if (options.selector) {
-        // 选择器等待模式
+        // Selector wait mode
         const parts = [];
-        parts.push(`选择器 "${options.selector}"`);
-        if (options.disappear) parts.push('消失');
-        else parts.push('出现');
-        if (options.text) parts.push(`包含文本 "${options.text}"`);
+        parts.push(`selector "${options.selector}"`);
+        if (options.disappear) parts.push('to disappear');
+        else parts.push('to appear');
+        if (options.text) parts.push(`with text "${options.text}"`);
         if (options.visible !== undefined) {
-          parts.push(options.visible ? '可见' : '隐藏');
+          parts.push(options.visible ? 'visible' : 'hidden');
         }
-        waitDescription = `等待 ${parts.join(' 且 ')}`;
+        waitDescription = `Wait for ${parts.join(' and ')}`;
         if (options.timeout) {
-          waitDescription += ` (超时: ${options.timeout}ms)`;
+          waitDescription += ` (timeout: ${options.timeout}ms)`;
         }
 
-        // 构建 WaitForOptions 参数
+        // Build WaitForOptions parameters
         waitParam = {
           selector: options.selector,
           timeout: options.timeout,
@@ -148,10 +148,10 @@ export const waitForTool = defineTool({
           ...(options.disappear !== undefined && { disappear: options.disappear }),
         };
       } else {
-        throw new Error('必须提供 delay 或 selector 参数');
+        throw new Error('Must provide delay or selector parameter');
       }
 
-      response.appendResponseLine(`开始 ${waitDescription}...`);
+      response.appendResponseLine(`Starting ${waitDescription}...`);
 
       const result = await waitForCondition(context.currentPage, waitParam);
 
@@ -159,17 +159,17 @@ export const waitForTool = defineTool({
       const duration = endTime - startTime;
 
       if (result) {
-        response.appendResponseLine(`等待成功，耗时 ${duration}ms`);
+        response.appendResponseLine(`Wait successful, took ${duration}ms`);
 
-        // 等待完成后，页面可能发生变化
+        // After wait completes, page may have changed
         response.setIncludeSnapshot(true);
       } else {
-        response.appendResponseLine(`等待失败，耗时 ${duration}ms`);
+        response.appendResponseLine(`Wait failed, took ${duration}ms`);
       }
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      response.appendResponseLine(`等待失败: ${errorMessage}`);
+      response.appendResponseLine(`Wait failed: ${errorMessage}`);
       throw error;
     }
   },
