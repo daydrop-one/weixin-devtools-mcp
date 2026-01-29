@@ -83,6 +83,22 @@ export const querySelectorTool = defineTool({
 });
 
 /**
+ * find_elements alias - Alias for $ selector tool
+ * Provides a more discoverable name for the element query functionality
+ */
+export const findElementsTool = defineTool({
+  name: 'find_elements',
+  description: 'Find page elements by CSS selector, return detailed information of matching elements (alias for $ tool)',
+  schema: z.object({
+    selector: z.string().min(1, 'Selector cannot be empty').describe('CSS selector, e.g.: view.container, #myId, .myClass'),
+  }),
+  annotations: {
+    audience: ['developers'],
+  },
+  handler: querySelectorTool.handler, // Share the same handler
+});
+
+/**
  * waitFor wait tool - Wait for condition to be met
  */
 export const waitForTool = defineTool({

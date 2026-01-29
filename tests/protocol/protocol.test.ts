@@ -64,11 +64,11 @@ describe('MCP Protocol Tests', () => {
   });
 
   describe('Tools Registration', () => {
-    it('should register all 40 tools', async () => {
+    it('should register all 41 tools (including find_elements alias)', async () => {
       await withClient(async (client) => {
         const { tools } = await client.listTools();
 
-        expect(tools).toHaveLength(40);
+        expect(tools).toHaveLength(41);
 
         // Verify tool name format (supports snake_case, camelCase, and special characters like $)
         tools.forEach(tool => {
@@ -89,6 +89,7 @@ describe('MCP Protocol Tests', () => {
 
         // Verify page query tools
         expect(toolNames).toContain('$');
+        expect(toolNames).toContain('find_elements');  // Alias for $ tool
         expect(toolNames).toContain('waitFor');
         expect(toolNames).toContain('get_page_snapshot');
 
@@ -123,6 +124,30 @@ describe('MCP Protocol Tests', () => {
           expect(tool.inputSchema.type).toBe('object');
           expect(tool.inputSchema.properties).toBeDefined();
         });
+      });
+    });
+  });
+
+  describe('Tool Aliases', () => {
+    it('find_elements should be an alias for $ with same schema', async () => {
+      await withClient(async (client) => {
+        const { tools } = await client.listTools();
+        const dollarTool = tools.find(t => t.name === '$');
+        const findTool = tools.find(t => t.name === 'find_elements');
+
+        expect(dollarTool).toBeDefined();
+        expect(findTool).toBeDefined();
+
+        // Both should have a selector property that's a string schema
+        expect(dollarTool!.inputSchema.properties.selector?.type).toBe('string');
+        expect(findTool!.inputSchema.properties.selector?.type).toBe('string');
+
+        // Both should require selector
+        expect(dollarTool!.inputSchema.required).toContain('selector');
+        expect(findTool!.inputSchema.required).toContain('selector');
+
+        // find_elements description should mention it's an alias
+        expect(findTool!.description).toContain('alias');
       });
     });
   });

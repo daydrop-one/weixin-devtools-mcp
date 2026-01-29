@@ -18,7 +18,7 @@ import {
   setSliderTool
 } from './input.js';
 import { screenshotTool } from './screenshot.js';
-import { querySelectorTool, waitForTool } from './page.js';
+import { querySelectorTool, waitForTool, findElementsTool } from './page.js';
 import {
   assertExistsTool,
   assertVisibleTool,
@@ -70,6 +70,7 @@ export const allTools: ToolDefinition[] = [
 
   // Page query and wait tools
   querySelectorTool,
+  findElementsTool,  // Alias for $ selector tool
   waitForTool,
 
   // Input interaction tools
